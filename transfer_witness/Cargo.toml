@@ -1,0 +1,27 @@
+[package]
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+name = "transfer_witness"
+readme.workspace = true
+version.workspace = true
+
+[dependencies]
+alloy-primitives = { workspace = true }
+alloy-sol-types = { workspace = true }
+anoma-rm-risc0 = { workspace = true, default-features = false }
+anoma-rm-risc0-gadgets = { workspace = true }
+bincode = { workspace = true }
+k256 = { workspace = true, features = [
+  "arithmetic",
+  "serde",
+  "expose-field",
+  "std",
+  "ecdsa",
+  "hash2curve",
+], default-features = false }
+rand = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true }
