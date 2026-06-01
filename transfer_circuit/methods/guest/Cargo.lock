@@ -209,9 +209,9 @@ dependencies = [
 
 [[package]]
 name = "anoma-rm-risc0"
-version = "1.0.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26e987cb8962ddb8e72b43a32aadfb36c2d9abe9829c91d7b97fa742b3a1b998"
+checksum = "d3d19fa05e0ecdb7bf6205e6cb31aff30b531b113f455da6eac8db3550f171b1"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -227,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "anoma-rm-risc0-gadgets"
-version = "1.0.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c126d90b10b9be4663490e80cc5309fb7612e2ed914e32aaca0a9fe516ebfe1"
+checksum = "35107a0e6485de895631e7807bd3709ead5e8c05f17ce0759105cfb5bd8796f5"
 dependencies = [
  "aes-gcm",
  "alloy-primitives",
@@ -497,7 +497,7 @@ dependencies = [
  "ark-ff 0.5.0",
  "ark-std 0.5.0",
  "tracing",
- "tracing-subscriber 0.2.25",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -585,25 +585,6 @@ checksum = "246a225cc6131e9ee4f24619af0f19d67761fff15d7ccc22e42b80846e69449a"
 dependencies = [
  "num-traits",
  "rand 0.8.5",
-]
-
-[[package]]
-name = "arm"
-version = "0.13.0"
-source = "git+https://github.com/anoma/arm-risc0?tag=v0.13.0#cde4e1b7bdda25f8a9cc003fc7ff94263bcdd2b3"
-dependencies = [
- "bincode",
- "bytemuck",
- "hex",
- "k256",
- "lazy_static",
- "rand 0.8.5",
- "risc0-zkvm",
- "serde",
- "serde_with",
- "slab",
- "thiserror",
- "tracing-subscriber 0.3.20",
 ]
 
 [[package]]
@@ -2243,15 +2224,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5b0c77c1b780822bc749a33e39aeb2c07584ab93332303babeabb645298a76e"
 
 [[package]]
-name = "nu-ansi-term"
-version = "0.50.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4a28e057d01f97e61255210fcff094d74ed0466038633e95017f5beb68e4399"
-dependencies = [
- "windows-sys 0.52.0",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3526,15 +3498,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sharded-slab"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
-dependencies = [
- "lazy_static",
-]
-
-[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3737,15 +3700,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "thread_local"
-version = "1.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f60246a4944f24f6e018aa17cdeffb7818b76356965d03b07d6a9886e8962185"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "time"
 version = "0.3.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3811,9 +3765,8 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token-transfer-guest"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
- "arm",
  "risc0-zkvm",
  "transfer_witness",
 ]
@@ -3978,17 +3931,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-log"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
-dependencies = [
- "log",
- "once_cell",
- "tracing-core",
-]
-
-[[package]]
 name = "tracing-subscriber"
 version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3998,22 +3940,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-subscriber"
-version = "0.3.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2054a14f5307d601f88daf0553e1cbf472acc4f2c51afab632431cdcd72124d5"
-dependencies = [
- "nu-ansi-term",
- "sharded-slab",
- "smallvec",
- "thread_local",
- "tracing-core",
- "tracing-log",
-]
-
-[[package]]
 name = "transfer_witness"
-version = "0.0.1"
+version = "2.0.0-rc3"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",

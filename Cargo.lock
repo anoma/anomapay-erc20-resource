@@ -4801,7 +4801,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_library"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -4814,7 +4814,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_library_v2"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -4828,7 +4828,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_witness"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -4843,7 +4843,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_witness_v2"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",

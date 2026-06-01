@@ -4536,7 +4536,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token-transfer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -4744,7 +4744,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_library"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -4757,7 +4757,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_witness"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",

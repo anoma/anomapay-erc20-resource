@@ -13,7 +13,7 @@ authors = ["Xuyang <xuyang@heliax.dev>"]
 edition = "2024"
 license = "GPL-3.0"
 readme = "README.md"
-version = "2.0.0-rc2"
+version = "2.0.0-rc3"
 
 [workspace.dependencies]
 alloy-primitives = "1.0.23"
