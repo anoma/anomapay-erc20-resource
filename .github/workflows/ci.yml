@@ -65,6 +65,8 @@ jobs:
 
       - name: cargo test (workspace)
         run: cargo test --workspace -- --nocapture
+        env:
+          RISC0_DEV_MODE: "1"
 
       - name: cargo build (transfer_circuit)
         working-directory: transfer_circuit
