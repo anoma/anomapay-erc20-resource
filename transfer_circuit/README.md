@@ -4,12 +4,12 @@ You may generate different ELFs and ImageIDs on different machines and environme
 
 ## Reproducing the `TOKEN_TRANSFER_ID` committed in `transfer_library`
 
-The `TOKEN_TRANSFER_ID` constant in [`crates/transfer_library/src/lib.rs`](../transfer_library/src/lib.rs) is the `ImageID` of a specific historical build of the guest ELF — *not* of whatever `cargo risczero build` produces from this repo at HEAD (see [ImageID mismatch with `transfer_library`](#imageid-mismatch-with-transfer_library) below).
+The `TOKEN_TRANSFER_ID` constant in [`transfer_library/src/lib.rs`](../transfer_library/src/lib.rs) is the `ImageID` of a specific historical build of the guest ELF — *not* of whatever `cargo risczero build` produces from this repo at HEAD (see [ImageID mismatch with `transfer_library`](#imageid-mismatch-with-transfer_library) below).
 
-To reproduce that exact value, check out commit `ec5f9bc0466feb5abf2da5ad7d9a5c365a4d0a8f` of the `anomapay-backend` repo (this codebase's pre-multichain ancestor, where the path was `simple_transfer/transfer_circuit/...`) and run:
+To reproduce that exact value, check out commit `ec5f9bc0466feb5abf2da5ad7d9a5c365a4d0a8f` of the `anomapay-backend` repo (this codebase's pre-multichain ancestor, where the path was `transfer_circuit/...`) and run:
 
 ```bash
-cargo risczero build --manifest-path simple_transfer/transfer_circuit/methods/guest/Cargo.toml
+cargo risczero build --manifest-path transfer_circuit/methods/guest/Cargo.toml
 ```
 
 which reproduces:
@@ -17,24 +17,24 @@ which reproduces:
 ```bash
 ELFs ready at:
 ImageID: bc12323668c37c3d381ca798f11116f35fb1639d12239b29da7810df3985e7ad
-anomapay-backend/simple_transfer/transfer_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/token-transfer-guest.bin
+transfer_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/token-transfer-guest.bin
 ```
 
-The same value is also embedded as the committed guest binary at `crates/transfer_library/elf/token-transfer-guest.bin` in this repo.
+The same value is also embedded as the committed guest binary at `transfer_library/elf/token-transfer-guest.bin` in this repo.
 
 ## Building from the current repo HEAD
 
 To build the circuit from this repo at HEAD, run:
 
 ```bash
-cargo risczero build --manifest-path crates/transfer_circuit/methods/guest/Cargo.toml
+cargo risczero build --manifest-path transfer_circuit/methods/guest/Cargo.toml
 ```
 
 The `ImageID` produced will generally **not** equal `TOKEN_TRANSFER_ID`. That divergence is intentional — see the next section.
 
 ## ImageID mismatch with `transfer_library`
 
-Running `cargo risczero build` against this repo at HEAD will produce an `ImageID` that does not match the `TOKEN_TRANSFER_ID = bc12323668c37c3d381ca798f11116f35fb1639d12239b29da7810df3985e7ad` currently committed in [`crates/transfer_library/src/lib.rs`](../transfer_library/src/lib.rs). This is expected: the committed `TOKEN_TRANSFER_ID` (and the matching `crates/transfer_library/elf/token-transfer-guest.bin`) corresponds to the historical build reproduced in the [section above](#reproducing-the-token_transfer_id-committed-in-transfer_library), not to a fresh build of the current source tree.
+Running `cargo risczero build` against this repo at HEAD will produce an `ImageID` that does not match the `TOKEN_TRANSFER_ID = bc12323668c37c3d381ca798f11116f35fb1639d12239b29da7810df3985e7ad` currently committed in [`transfer_library/src/lib.rs`](../transfer_library/src/lib.rs). This is expected: the committed `TOKEN_TRANSFER_ID` (and the matching `transfer_library/elf/token-transfer-guest.bin`) corresponds to the historical build reproduced in the [section above](#reproducing-the-token_transfer_id-committed-in-transfer_library), not to a fresh build of the current source tree.
 
 ### Why the values drift
 
@@ -59,8 +59,8 @@ We only pay that cost when the **circuit logic itself** changes — i.e., when t
 If you need the two values to agree (e.g., before a release that does change circuit logic), update both together:
 
 1. Rebuild with the command above.
-2. Replace `crates/transfer_library/elf/token-transfer-guest.bin` with the freshly built ELF.
-3. Update `TOKEN_TRANSFER_ID` in `crates/transfer_library/src/lib.rs` to the new `ImageID`.
+2. Replace `transfer_library/elf/token-transfer-guest.bin` with the freshly built ELF.
+3. Update `TOKEN_TRANSFER_ID` in `transfer_library/src/lib.rs` to the new `ImageID`.
 4. Coordinate the corresponding protocol-adapter redeployment and PA update.
 
 
