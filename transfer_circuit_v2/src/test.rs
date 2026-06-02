@@ -38,7 +38,7 @@ fn create_persistent_resource_v2() -> Resource {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
     let value_info = ValueInfo {
         auth_pk,
         encryption_pk,
@@ -81,7 +81,7 @@ fn create_persistent_resource_v1() -> Resource {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
     let value_info = ValueInfo {
         auth_pk,
         encryption_pk,
@@ -120,7 +120,7 @@ fn create_migrate_resource_logic() -> TransferLogicV2 {
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
 
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
 
     let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
 
@@ -202,7 +202,7 @@ fn test_transfer_v2() {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
 
     let action_tree_root = Digest::default(); // dummy action_tree_root
 
@@ -360,7 +360,7 @@ fn test_negative_migration_with_wrong_encryption_pk_in_value_info() {
         .migrate_info
     {
         let wrong_encryption_sk = SecretKey::new(Scalar::from(UNEXPECTED_ENCRYPTION_SK));
-        let wrong_encryption_pk = generate_public_key(&wrong_encryption_sk.inner());
+        let wrong_encryption_pk = generate_public_key(wrong_encryption_sk.inner());
         migrate_info.value_info.encryption_pk = wrong_encryption_pk;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();

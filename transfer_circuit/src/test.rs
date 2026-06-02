@@ -55,7 +55,7 @@ fn create_persistent_resource() -> Resource {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
     let value_info = ValueInfo {
         auth_pk,
         encryption_pk,
@@ -125,7 +125,7 @@ fn test_transfer() {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
 
     let action_tree_root = Digest::default(); // dummy action_tree_root
 
@@ -423,7 +423,7 @@ fn create_persistent_consumed_resource_logic() -> TransferLogic {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
 
     let action_tree_root = Digest::default(); // dummy action_tree_root
 
@@ -483,7 +483,7 @@ fn test_negative_persistent_resource_consumption_with_invalid_value_info() {
     // Wrong encryption_pk in value_info
     let mut resource_logic_with_wrong_encryption_pk = resource_logic.clone();
     let wrong_encryption_sk = SecretKey::new(Scalar::from(UNEXPECTED_ENCRYPTION_SK));
-    let wrong_encryption_pk = generate_public_key(&wrong_encryption_sk.inner());
+    let wrong_encryption_pk = generate_public_key(wrong_encryption_sk.inner());
     resource_logic_with_wrong_encryption_pk
         .witness
         .value_info
@@ -545,7 +545,7 @@ fn create_persistent_created_resource_logic() -> TransferLogic {
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
-    let encryption_pk = generate_public_key(&encryption_sk.inner());
+    let encryption_pk = generate_public_key(encryption_sk.inner());
 
     let action_tree_root = Digest::default(); // dummy action_tree_root
 
@@ -643,7 +643,7 @@ fn test_negative_persistent_resource_creation_with_invalid_value_info() {
     // Wrong encryption_pk in value_info
     let mut resource_logic_with_wrong_encryption_pk = resource_logic.clone();
     let wrong_encryption_sk = SecretKey::new(Scalar::from(UNEXPECTED_ENCRYPTION_SK));
-    let wrong_encryption_pk = generate_public_key(&wrong_encryption_sk.inner());
+    let wrong_encryption_pk = generate_public_key(wrong_encryption_sk.inner());
     resource_logic_with_wrong_encryption_pk
         .witness
         .value_info
