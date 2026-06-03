@@ -3,7 +3,7 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 name = "transfer_witness_v2"
-readme.workspace = true
+readme = "README.md"
 version.workspace = true
 
 [dependencies]
