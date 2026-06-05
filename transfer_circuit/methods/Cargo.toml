@@ -1,4 +1,5 @@
 [package]
+description = "Build helper that compiles the token-transfer RISC Zero guest and exposes its ELF and ImageID."
 edition = "2021"
 name = "token-transfer-methods"
 version = "1.0.0"

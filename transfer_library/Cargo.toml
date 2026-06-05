@@ -1,5 +1,6 @@
 [package]
 authors.workspace = true
+description = "Host-side proving API for the AnomaPay ERC20 transfer resource, with the embedded RISC Zero guest ELF and ImageID."
 edition.workspace = true
 license.workspace = true
 name = "transfer_library"
