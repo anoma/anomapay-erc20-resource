@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 name = "transfer_witness_v2"
 readme = "README.md"
+repository.workspace = true
 version.workspace = true
 
 [dependencies]
