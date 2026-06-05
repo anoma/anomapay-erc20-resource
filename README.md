@@ -149,8 +149,8 @@ and on pull requests:
 ## Versioning
 
 The workspace crates (`transfer_witness*`, `transfer_library*`) share the
-version in `[workspace.package]` (currently `2.0.0-rc3`). The circuit crates are
-versioned independently (currently `1.0.0`).
+version in `[workspace.package]` (currently `2.0.0`). The circuit crates are
+versioned independently (currently `2.0.0`).
 
 ## License
 
