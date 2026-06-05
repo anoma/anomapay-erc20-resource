@@ -30,7 +30,7 @@ serde = { version = "1.0", features = ["derive"] }
 transfer_library = { path = "transfer_library" }
 transfer_library_v2 = { path = "transfer_library_v2" }
 transfer_witness = "2.0.0"
-transfer_witness_v2 = { path = "transfer_witness_v2" }
+transfer_witness_v2 = "2.0.0"
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]

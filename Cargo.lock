@@ -4823,7 +4823,7 @@ dependencies = [
  "lazy_static",
  "serde",
  "transfer_witness 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "transfer_witness_v2",
+ "transfer_witness_v2 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4860,6 +4860,21 @@ dependencies = [
 [[package]]
 name = "transfer_witness_v2"
 version = "2.0.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "bincode",
+ "serde",
+ "transfer_witness 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "transfer_witness_v2"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2614eb54146230cc0eb9d48149f400ae3a60da5a49ff2f8e477f476ca04d1f2b"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
