@@ -2,7 +2,7 @@
 description = "Build helper that compiles the token-transfer-v2 RISC Zero guest and exposes its ELF and ImageID."
 edition = "2021"
 name = "token-transfer-methods"
-version = "1.0.0"
+version = "2.0.0"
 
 [build-dependencies]
 risc0-build = { version = "3.0.3", features = ["unstable"] }

@@ -14,7 +14,7 @@ edition = "2024"
 license = "GPL-3.0"
 readme = "README.md"
 repository = "https://github.com/anoma/anomapay-erc20-resource"
-version = "2.0.0-rc3"
+version = "2.0.0"
 
 [workspace.dependencies]
 alloy-primitives = "1.0.23"

@@ -2,7 +2,7 @@
 description = "RISC Zero guest entry point for the AnomaPay ERC20 transfer resource logic."
 edition = "2021"
 name = "token-transfer-guest"
-version = "1.0.0"
+version = "2.0.0"
 
 [workspace]
 
