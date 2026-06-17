@@ -146,6 +146,20 @@ and on pull requests:
   `cargo test --workspace`, and a build + `RISC0_DEV_MODE=1` test of each
   circuit.
 
+## Audits
+
+Our software undergoes regular audits:
+
+1. Informal Systems
+
+   - Company Website: https://informal.systems
+   - Commit ID: [03e60b64d9dc3845c55e34d1d0bef25392cb5b60](https://github.com/anoma/anomapay-erc20-forwarder/tree/03e60b64d9dc3845c55e34d1d0bef25392cb5b60)
+   - Started: 2025-12-01
+   - Finished: 2025-12-16
+   - Last revised: 2025-12-19
+
+   [📄 Audit Report (pdf)](./audits/2025-12-19_Informal_Systems_AnomaPay_Phase_I.pdf)
+
 ## Versioning
 
 The workspace crates (`transfer_witness*`, `transfer_library*`) share the
