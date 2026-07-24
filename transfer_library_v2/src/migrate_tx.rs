@@ -2,7 +2,7 @@ use crate::TransferLogicV2;
 use anoma_rm_risc0::{
     Digest,
     action::Action,
-    action_tree::MerkleTree,
+    action_tree::ActionTree,
     compliance::ComplianceWitness,
     compliance_unit::ComplianceUnit,
     delta_proof::DeltaWitness,
@@ -11,7 +11,7 @@ use anoma_rm_risc0::{
     merkle_path::MerklePath,
     nullifier_key::NullifierKey,
     proving_system::ProofType,
-    resource::Resource,
+    resource::{ConsumedResourceWitness, Resource},
     transaction::{Delta, Transaction},
 };
 use anoma_rm_risc0_gadgets::authority::{AuthoritySignature, AuthorityVerifyingKey};
@@ -44,14 +44,16 @@ pub fn construct_migrate_tx(
     // Action tree
     let consumed_nf = consumed_resource.nullifier(&consumed_nf_key)?;
     let created_cm = created_resource.commitment();
-    let action_tree_root = MerkleTree::new(vec![consumed_nf, created_cm]).root()?;
+    let action_tree_root = ActionTree::new(vec![consumed_nf, created_cm]).root()?;
 
     // Generate compliance units
-    let compliance_witness = ComplianceWitness::from_resources(
-        consumed_resource,
+    let consumed_resource_witness =
+        ConsumedResourceWitness::from_resource(consumed_resource, consumed_nf_key.clone());
+    let compliance_witness = ComplianceWitness::from_resources_with_ephemeral_root(
+        &[consumed_resource_witness],
+        &[created_resource],
         latest_cm_tree_root,
-        consumed_nf_key.clone(),
-        created_resource,
+        vec![],
     );
     let compliance_unit = ComplianceUnit::create(&compliance_witness, ProofType::Groth16)?;
 
@@ -85,7 +87,7 @@ pub fn construct_migrate_tx(
 
     // Construct the action
     let action = Action::new(
-        vec![compliance_unit],
+        compliance_unit,
         vec![consumed_logic_proof, created_logic_proof],
     )?;
 
@@ -100,7 +102,8 @@ pub fn construct_migrate_tx(
 #[cfg(not(target_os = "macos"))]
 fn simple_migrate_test() {
     use anoma_rm_risc0::{
-        compliance::INITIAL_ROOT, nullifier_key::NullifierKey, resource::Resource,
+        compliance::INITIAL_ROOT, constants::init_kind_table_from_file,
+        nullifier_key::NullifierKey, resource::Resource,
     };
     use anoma_rm_risc0_gadgets::{
         authority::{AuthoritySigningKey, AuthorityVerifyingKey},
@@ -109,6 +112,12 @@ fn simple_migrate_test() {
     use transfer_witness::ValueInfo;
     use transfer_witness::{calculate_label_ref, calculate_persistent_value_ref};
     use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
+
+    // The transaction carries an empty kind table (no precomputed kind
+    // points), so `Transaction::verify` needs the global table initialized
+    // to the same empty set before it will accept the commitment.
+    let kind_table_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("kind_table.json");
+    init_kind_table_from_file(&kind_table_path).unwrap();
 
     // Common parameters
     let forwarder_addr_v1 = vec![0u8; 20];
@@ -175,14 +184,14 @@ fn simple_migrate_test() {
         value_ref: calculate_persistent_value_ref(&value_info),
         quantity,
         is_ephemeral: false,
-        nonce: consumed_nf.as_bytes().try_into().unwrap(),
+        nonce: Resource::derive_nonce_from_nullifiers(0, &[consumed_nf]).unwrap(),
         ..Default::default()
     };
 
     let created_cm = created_resource.commitment();
 
     // Generate the authorization signature
-    let action_tree = MerkleTree::new(vec![consumed_nf, created_cm]);
+    let action_tree = ActionTree::new(vec![consumed_nf, created_cm]);
     let migrated_auth_sig = migrated_auth_sk.sign(
         AUTH_SIGNATURE_DOMAIN_V2,
         action_tree.root().unwrap().as_bytes(),
