@@ -50,8 +50,8 @@ pub fn construct_migrate_tx(
     let consumed_resource_witness =
         ConsumedResourceWitness::from_resource(consumed_resource, consumed_nf_key.clone());
     let compliance_witness = ComplianceWitness::from_resources_with_ephemeral_root(
-        &[consumed_resource_witness],
-        &[created_resource],
+        vec![consumed_resource_witness],
+        vec![created_resource],
         latest_cm_tree_root,
         vec![],
     );
@@ -102,8 +102,10 @@ pub fn construct_migrate_tx(
 #[cfg(not(target_os = "macos"))]
 fn simple_migrate_test() {
     use anoma_rm_risc0::{
-        compliance::INITIAL_ROOT, constants::init_kind_table_from_file,
-        nullifier_key::NullifierKey, resource::Resource,
+        compliance::INITIAL_ROOT,
+        constants::{init_kind_table_from_file, kind_table_hash},
+        nullifier_key::NullifierKey,
+        resource::Resource,
     };
     use anoma_rm_risc0_gadgets::{
         authority::{AuthoritySigningKey, AuthorityVerifyingKey},
@@ -221,5 +223,6 @@ fn simple_migrate_test() {
     println!("Tx build duration time: {:?}", tx_start_timer.elapsed());
 
     // Verify the transaction
-    tx.verify().unwrap();
+    let kind_table_commitment = *kind_table_hash().unwrap();
+    tx.verify(kind_table_commitment).unwrap();
 }
