@@ -7,8 +7,10 @@ version = "2.0.0"
 [workspace]
 
 [dependencies]
-anoma-rm-risc0 = { version = "2.0.0-rc.5", default-features = false }
-anoma-rm-risc0-gadgets = "2.0.0-rc.5"
+anoma-rm-risc0 = { git = "https://github.com/anoma/arm-risc0", rev = "137fce59ae8ef3ed39ccd609d6c67478224dbc6c", features = [
+  "prove","bonsai", "cuda", "transaction"
+]}
+anoma-rm-risc0-gadgets = { git = "https://github.com/anoma/arm-risc0", rev = "137fce59ae8ef3ed39ccd609d6c67478224dbc6c" }
 k256 = { version = "=0.13.3", features = [
   "arithmetic",
   "serde",

@@ -208,11 +208,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "anoma-rm-core"
+version = "2.0.0-rc.5"
+source = "git+https://github.com/anoma/arm-risc0?rev=137fce59ae8ef3ed39ccd609d6c67478224dbc6c#137fce59ae8ef3ed39ccd609d6c67478224dbc6c"
+dependencies = [
+ "bincode",
+ "bytemuck",
+ "hex",
+ "risc0-zkp",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "anoma-rm-risc0"
 version = "2.0.0-rc.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adf60b4865adfb1bd8203077f3f455de7b53dac928a8acc9640b523ee211be52"
+source = "git+https://github.com/anoma/arm-risc0?rev=137fce59ae8ef3ed39ccd609d6c67478224dbc6c#137fce59ae8ef3ed39ccd609d6c67478224dbc6c"
 dependencies = [
+ "anoma-rm-core",
  "bincode",
  "bytemuck",
  "hex",
@@ -229,8 +242,7 @@ dependencies = [
 [[package]]
 name = "anoma-rm-risc0-gadgets"
 version = "2.0.0-rc.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0898011820cde42d76c39b1957398da2b31eb6ec7762772f7db4bafcd8e817e8"
+source = "git+https://github.com/anoma/arm-risc0?rev=137fce59ae8ef3ed39ccd609d6c67478224dbc6c#137fce59ae8ef3ed39ccd609d6c67478224dbc6c"
 dependencies = [
  "aes-gcm",
  "alloy-primitives",

@@ -1,10 +1,10 @@
 use crate::TransferLogicV2;
 use anoma_rm_risc0::{
     Digest,
-    action::Action,
+    action,
     action_tree::ActionTree,
-    compliance::ComplianceWitness,
-    compliance_unit::ComplianceUnit,
+    compliance,
+    compliance_unit,
     delta_proof::DeltaWitness,
     error::ArmError,
     logic_proof::LogicProver,
@@ -12,7 +12,7 @@ use anoma_rm_risc0::{
     nullifier_key::NullifierKey,
     proving_system::ProofType,
     resource::{ConsumedResourceWitness, Resource},
-    transaction::{Delta, Transaction},
+    transaction::{self, Delta, Transaction},
 };
 use anoma_rm_risc0_gadgets::authority::{AuthoritySignature, AuthorityVerifyingKey};
 use k256::AffinePoint;
@@ -49,13 +49,13 @@ pub fn construct_migrate_tx(
     // Generate compliance units
     let consumed_resource_witness =
         ConsumedResourceWitness::from_resource(consumed_resource, consumed_nf_key.clone());
-    let compliance_witness = ComplianceWitness::from_resources_with_ephemeral_root(
+    let compliance_witness = compliance::from_resources_with_ephemeral_root(
         vec![consumed_resource_witness],
         vec![created_resource],
         latest_cm_tree_root,
         vec![],
     );
-    let compliance_unit = ComplianceUnit::create(&compliance_witness, ProofType::Groth16)?;
+    let compliance_unit = compliance_unit::create(&compliance_witness, ProofType::Groth16)?;
 
     // Generate logic proofs
     let consumed_resource_logic = TransferLogicV2::migrate_resource_logic(
@@ -86,26 +86,23 @@ pub fn construct_migrate_tx(
     let created_logic_proof = created_resource_logic.prove(ProofType::Groth16)?;
 
     // Construct the action
-    let action = Action::new(
-        compliance_unit,
-        vec![consumed_logic_proof, created_logic_proof],
-    )?;
+    let action = action::new(compliance_unit, vec![consumed_logic_proof, created_logic_proof])?;
 
     // Construct the transaction
     let delta_witness = DeltaWitness::from_bytes(&compliance_witness.rcv)?;
     let tx = Transaction::create(vec![action], Delta::Witness(delta_witness));
-    let balanced_tx = tx.generate_delta_proof().unwrap();
+    let balanced_tx = transaction::generate_delta_proof(tx).unwrap();
     Ok(balanced_tx)
 }
 
 #[test]
-#[cfg(not(target_os = "macos"))]
 fn simple_migrate_test() {
     use anoma_rm_risc0::{
         compliance::INITIAL_ROOT,
         constants::{init_kind_table_from_file, kind_table_hash},
-        nullifier_key::NullifierKey,
+        nullifier_key::{self, NullifierKey},
         resource::Resource,
+        transaction,
     };
     use anoma_rm_risc0_gadgets::{
         authority::{AuthoritySigningKey, AuthorityVerifyingKey},
@@ -155,7 +152,7 @@ fn simple_migrate_test() {
     println!("Migrated resource cm: {:?}", migrated_cm);
 
     // Construct the consumed resource
-    let (consumed_nf_key, consumed_nf_cm) = NullifierKey::random_pair();
+    let (consumed_nf_key, consumed_nf_cm) = nullifier_key::random_pair();
     let consumed_resource = Resource {
         logic_ref: TransferLogicV2::verifying_key(),
         label_ref: label_ref_v2,
@@ -167,10 +164,10 @@ fn simple_migrate_test() {
 
     let consumed_nf = consumed_resource.nullifier(&consumed_nf_key).unwrap();
     // Fetch the latest cm tree root from the chain
-    let latest_cm_tree_root = *INITIAL_ROOT;
+    let latest_cm_tree_root = INITIAL_ROOT;
 
     // Generate the created resource
-    let (_created_nf_key, created_nf_cm) = NullifierKey::random_pair();
+    let (_created_nf_key, created_nf_cm) = nullifier_key::random_pair();
     let created_auth_sk = AuthoritySigningKey::new();
     let created_auth_pk = AuthorityVerifyingKey::from_signing_key(&created_auth_sk);
     let (_created_discovery_sk, created_discovery_pk) = random_keypair();
@@ -224,5 +221,5 @@ fn simple_migrate_test() {
 
     // Verify the transaction
     let kind_table_commitment = *kind_table_hash().unwrap();
-    tx.verify(kind_table_commitment).unwrap();
+    transaction::verify(&tx, kind_table_commitment).unwrap();
 }
