@@ -142,7 +142,7 @@ fn create_migrate_resource_logic() -> TransferLogicV2 {
 
 #[test]
 fn test_mint_v2() {
-    use anoma_rm_risc0::proving_system::ProofType;
+    use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
 
     let resource = create_ephemeral_resource_v2();
     let mut resource_logic = TransferLogicV2::mint_resource_logic_with_permit(
@@ -159,7 +159,7 @@ fn test_mint_v2() {
 
     let proof = resource_logic.prove(ProofType::Succinct).unwrap();
 
-    proof.verify().unwrap();
+    logic_proof::verify(&proof).unwrap();
 
     // Change the is_consumed flag to false
     resource_logic.witness.is_consumed = false;
@@ -168,7 +168,7 @@ fn test_mint_v2() {
 
 #[test]
 fn test_burn_v2() {
-    use anoma_rm_risc0::proving_system::ProofType;
+    use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
 
     let resource = create_ephemeral_resource_v2();
     let mut resource_logic = TransferLogicV2::burn_resource_logic(
@@ -181,7 +181,7 @@ fn test_burn_v2() {
 
     let proof = resource_logic.prove(ProofType::Succinct).unwrap();
 
-    proof.verify().unwrap();
+    logic_proof::verify(&proof).unwrap();
 
     // Change the is_consumed flag to true
     resource_logic.witness.is_consumed = true;
@@ -192,7 +192,7 @@ fn test_burn_v2() {
 
 #[test]
 fn test_transfer_v2() {
-    use anoma_rm_risc0::proving_system::ProofType;
+    use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
     use anoma_rm_risc0_gadgets::encryption::{Ciphertext, random_keypair};
     use transfer_witness::ResourceWithLabel;
     use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
@@ -218,7 +218,7 @@ fn test_transfer_v2() {
     );
 
     let proof = consumed_resource_logic.prove(ProofType::Succinct).unwrap();
-    proof.verify().unwrap();
+    logic_proof::verify(&proof).unwrap();
 
     let created_resource = create_persistent_resource_v2();
     let (created_discovery_sk, created_discovery_pk) = random_keypair();
@@ -233,16 +233,26 @@ fn test_transfer_v2() {
     );
 
     let proof = created_resource_logic.prove(ProofType::Succinct).unwrap();
-    proof.verify().unwrap();
+    logic_proof::verify(&proof).unwrap();
 
     // check discovery ciphertext
-    let discovery_ciphertext =
-        Ciphertext::from_words(&proof.get_instance().unwrap().app_data.discovery_payload[0].blob);
+    let discovery_ciphertext = Ciphertext::from_words(
+        &logic_proof::get_instance(&proof)
+            .unwrap()
+            .app_data
+            .discovery_payload[0]
+            .blob,
+    );
     discovery_ciphertext.decrypt(&created_discovery_sk).unwrap();
 
     // check encryption
-    let encryption_ciphertext =
-        Ciphertext::from_words(&proof.get_instance().unwrap().app_data.resource_payload[0].blob);
+    let encryption_ciphertext = Ciphertext::from_words(
+        &logic_proof::get_instance(&proof)
+            .unwrap()
+            .app_data
+            .resource_payload[0]
+            .blob,
+    );
     let plaintext = encryption_ciphertext.decrypt(&encryption_sk).unwrap();
     let expected_plaintext = bincode::serialize(&ResourceWithLabel {
         resource: created_resource,
@@ -269,13 +279,13 @@ fn test_transfer_v2() {
 
 #[test]
 fn test_positive_migration() {
-    use anoma_rm_risc0::proving_system::ProofType;
+    use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
 
     let resource_logic = create_migrate_resource_logic();
 
     let proof = resource_logic.prove(ProofType::Succinct).unwrap();
 
-    proof.verify().unwrap();
+    logic_proof::verify(&proof).unwrap();
 }
 
 #[test]
