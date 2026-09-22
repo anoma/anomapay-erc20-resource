@@ -28,7 +28,7 @@ pub const TOKEN_TRANSFER_V2_ELF: &[u8] = include_bytes!("../elf/token-transfer-g
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
     pub static ref TOKEN_TRANSFER_V2_ID: Digest =
-        Digest::from_hex("7da9a32dd1c2822fa7507bef6876354a6df81656a177fbe7e2980298bbc1f6c7")
+        Digest::from_hex("0d524b3d1235c808fefaafa56360a1ac587996b65d117c6d00c7fc7dd9ae73b6")
             .unwrap();
 }
 
