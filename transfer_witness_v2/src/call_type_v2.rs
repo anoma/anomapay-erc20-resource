@@ -24,28 +24,40 @@ sol! {
     }
 }
 
-pub fn encode_migrate_forwarder_input(
+/// One entry of a migration batch's forwarder calldata, in raw byte form.
+pub struct MigrateForwarderEntry {
+    pub nullifier: Vec<u8>,
+    pub root: Vec<u8>,
+    pub logic_ref: Vec<u8>,
+    pub forwarder_addr: Vec<u8>,
+}
+
+pub fn encode_migrate_forwarder_input_batch(
     erc20_token_addr: &[u8],
     quantity: u128,
-    nullifier: &[u8],
-    commitment_tree_root: &[u8],
-    migrate_resource_logic_ref: &[u8],
-    migrate_resource_forwarder_addr: &[u8],
+    entries: &[MigrateForwarderEntry],
 ) -> Result<Vec<u8>, ArmError> {
     let token: Address = erc20_token_addr
         .try_into()
         .map_err(|_| ArmError::ProveFailed("Invalid address bytes".to_string()))?;
 
-    let forwarder_addr_v1: Address = migrate_resource_forwarder_addr
-        .try_into()
-        .map_err(|_| ArmError::ProveFailed("Invalid address bytes".to_string()))?;
+    let migrate_data = entries
+        .iter()
+        .map(|entry| -> Result<MigrateV1Data, ArmError> {
+            let forwarder_addr_v1: Address = entry
+                .forwarder_addr
+                .as_slice()
+                .try_into()
+                .map_err(|_| ArmError::ProveFailed("Invalid address bytes".to_string()))?;
 
-    let migrate_data = MigrateV1Data {
-        nullifier: B256::from_slice(nullifier),
-        rootV1: B256::from_slice(commitment_tree_root),
-        logicRefV1: B256::from_slice(migrate_resource_logic_ref),
-        forwarderV1: forwarder_addr_v1,
-    };
+            Ok(MigrateV1Data {
+                nullifier: B256::from_slice(&entry.nullifier),
+                rootV1: B256::from_slice(&entry.root),
+                logicRefV1: B256::from_slice(&entry.logic_ref),
+                forwarderV1: forwarder_addr_v1,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok((CallTypeV2::Migrate, token, quantity, migrate_data).abi_encode_params())
 }

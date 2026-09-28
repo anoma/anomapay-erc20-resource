@@ -16,7 +16,7 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use transfer_witness_v2::{
-    ForwarderInfoV2, MigrateInfo, TokenTransferWitnessV2, call_type_v2::CallTypeV2,
+    ForwarderInfoV2, MigrateEntry, MigrateInfo, TokenTransferWitnessV2, call_type_v2::CallTypeV2,
 };
 
 use transfer_witness::{EncryptionInfo, LabelInfo, PermitInfo, ValueInfo};
@@ -28,8 +28,21 @@ pub const TOKEN_TRANSFER_V2_ELF: &[u8] = include_bytes!("../elf/token-transfer-g
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
     pub static ref TOKEN_TRANSFER_V2_ID: Digest =
-        Digest::from_hex("0d524b3d1235c808fefaafa56360a1ac587996b65d117c6d00c7fc7dd9ae73b6")
+        Digest::from_hex("cd02f7a675004feb6c0ec65828eca44828c65da448aef2a09dea8306517a9419")
             .unwrap();
+}
+
+/// Parameters describing one V1 resource being migrated as part of a batch.
+pub struct MigrateEntryParams {
+    pub resource: Resource,
+    pub nf_key: NullifierKey,
+    // Merkle path from cm-tree v1 to prove existence of the resource
+    pub path: MerklePath,
+    pub auth_pk: AuthorityVerifyingKey,
+    pub encryption_pk: AffinePoint,
+    pub auth_sig: AuthoritySignature,
+    // forwarder address v1
+    pub forwarder_addr: Vec<u8>,
 }
 
 /// Holds the transfer resource logic.
@@ -199,7 +212,6 @@ impl TransferLogicV2 {
         )
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn migrate_resource_logic(
         self_resource: Resource,
         action_tree_root: Digest,
@@ -207,39 +219,34 @@ impl TransferLogicV2 {
         // forwarder address v2
         self_forwarder_addr: Vec<u8>,
         erc20_token_addr: Vec<u8>,
-        migrated_resource: Resource,
-        migrated_nf_key: NullifierKey,
-        migrated_resource_path: MerklePath,
-        migrated_auth_pk: AuthorityVerifyingKey,
-        migrated_encryption_pk: AffinePoint,
-        migrated_auth_sig: AuthoritySignature,
-        // forwarder address v1
-        migrated_forwarder_addr: Vec<u8>,
+        migrate_entries: Vec<MigrateEntryParams>,
     ) -> Self {
         let label_info = LabelInfo {
             forwarder_addr: self_forwarder_addr,
             erc20_token_addr,
         };
 
-        let migrated_value_info = ValueInfo {
-            auth_pk: migrated_auth_pk,
-            encryption_pk: migrated_encryption_pk,
-        };
-
-        let migrate_info = MigrateInfo {
-            resource: migrated_resource,
-            nf_key: migrated_nf_key.clone(),
-            path: migrated_resource_path,
-            auth_sig: migrated_auth_sig,
-            value_info: migrated_value_info,
-            forwarder_addr: migrated_forwarder_addr,
-        };
+        let entries = migrate_entries
+            .into_iter()
+            .map(|params| MigrateEntry {
+                resource: params.resource,
+                nf_key: params.nf_key,
+                path: params.path,
+                auth_sig: params.auth_sig,
+                value_info: ValueInfo {
+                    auth_pk: params.auth_pk,
+                    encryption_pk: params.encryption_pk,
+                },
+                // forwarder address v1
+                forwarder_addr: params.forwarder_addr,
+            })
+            .collect();
 
         let forwarder_info = ForwarderInfoV2 {
             call_type: CallTypeV2::Migrate,
             ethereum_account_addr: None,
             permit_info: None,
-            migrate_info: Some(migrate_info),
+            migrate_info: Some(MigrateInfo { entries }),
         };
 
         Self::new(

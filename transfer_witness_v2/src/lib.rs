@@ -2,7 +2,9 @@
 //! simple transfer resources in the Anoma Pay application.
 //!
 pub mod call_type_v2;
-use crate::call_type_v2::{CallTypeV2, encode_migrate_forwarder_input};
+use crate::call_type_v2::{
+    CallTypeV2, MigrateForwarderEntry, encode_migrate_forwarder_input_batch,
+};
 pub use anoma_rm_risc0::resource_logic::LogicCircuit;
 use anoma_rm_risc0::{
     Digest,
@@ -60,15 +62,27 @@ pub struct ForwarderInfoV2 {
     pub migrate_info: Option<MigrateInfo>,
 }
 
+/// Maximum number of V1 resources that can be migrated in a single batch.
+pub const MAX_MIGRATE_BATCH_SIZE: usize = 10;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MigrateInfo {
+    /// The batch of V1 resources being migrated by this trigger resource.
+    /// Must be non-empty and no larger than `MAX_MIGRATE_BATCH_SIZE`.
+    pub entries: Vec<MigrateEntry>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct MigrateEntry {
     pub resource: Resource,
     pub nf_key: NullifierKey,
     // Merkle path from cm-tree v1 to prove existence of the migrate_resource
     pub path: MerklePath,
     pub auth_sig: AuthoritySignature,
     pub value_info: ValueInfo,
-    // The forwarder address in the migrate resource label_ref is still the v1 address
+    // The forwarder address in the migrate resource label_ref is still the v1 address.
+    // Not shared across entries: different entries may originate from different V1 or V2
+    // forwarder deployments.
     pub forwarder_addr: Vec<u8>,
 }
 
@@ -195,67 +209,88 @@ impl TokenTransferWitnessV2 {
                     .as_ref()
                     .ok_or(ArmError::MissingField("Migrate info"))?;
 
-                // compute migrate resource commitment tree root
-                let migrate_cm = migrate_info.resource.commitment();
-                let migrate_root = migrate_info.path.root(&migrate_cm);
-
-                // check migrate_resource is non-ephemeral
-                if migrate_info.resource.is_ephemeral {
+                if migrate_info.entries.is_empty() {
                     return Err(ArmError::ProveFailed(
-                        "Migrate resource must be non-ephemeral".to_string(),
+                        "Migration batch must not be empty".to_string(),
+                    ));
+                }
+                if migrate_info.entries.len() > MAX_MIGRATE_BATCH_SIZE {
+                    return Err(ArmError::ProveFailed(
+                        "Migration batch exceeds maximum size".to_string(),
                     ));
                 }
 
-                // check migrate_resource authorization
-                if migrate_info.resource.value_ref
-                    != calculate_persistent_value_ref(&migrate_info.value_info)
-                {
+                let mut total_quantity: u128 = 0;
+                let mut batch_entries = Vec::with_capacity(migrate_info.entries.len());
+
+                for entry in &migrate_info.entries {
+                    // compute migrate resource commitment tree root
+                    let migrate_cm = entry.resource.commitment();
+                    let migrate_root = entry.path.root(&migrate_cm);
+
+                    // check migrate_resource is non-ephemeral
+                    if entry.resource.is_ephemeral {
+                        return Err(ArmError::ProveFailed(
+                            "Migrate resource must be non-ephemeral".to_string(),
+                        ));
+                    }
+
+                    // check migrate_resource authorization
+                    if entry.resource.value_ref != calculate_persistent_value_ref(&entry.value_info)
+                    {
+                        return Err(ArmError::ProveFailed(
+                            "Invalid migrate resource value_ref".to_string(),
+                        ));
+                    }
+
+                    if entry
+                        .value_info
+                        .auth_pk
+                        .verify(AUTH_SIGNATURE_DOMAIN_V2, action_root, &entry.auth_sig)
+                        .is_err()
+                    {
+                        return Err(ArmError::InvalidSignature);
+                    }
+
+                    // compute migrate resource nullifier
+                    let migrate_nf = entry
+                        .resource
+                        .nullifier_from_commitment(&entry.nf_key, &migrate_cm)?;
+
+                    // check migrate_resource label_ref_v1
+                    let migrate_label_ref_v1 =
+                        calculate_label_ref(&entry.forwarder_addr, erc20_token_addr);
+                    if entry.resource.label_ref != migrate_label_ref_v1 {
+                        return Err(ArmError::ProveFailed(
+                            "Invalid migrate resource label_ref".to_string(),
+                        ));
+                    }
+
+                    total_quantity = total_quantity
+                        .checked_add(entry.resource.quantity)
+                        .ok_or_else(|| {
+                            ArmError::ProveFailed("Migrate quantity overflow".to_string())
+                        })?;
+
+                    batch_entries.push(MigrateForwarderEntry {
+                        nullifier: migrate_nf.as_bytes().to_vec(),
+                        root: migrate_root.as_bytes().to_vec(),
+                        logic_ref: entry.resource.logic_ref.as_bytes().to_vec(),
+                        forwarder_addr: entry.forwarder_addr.clone(),
+                    });
+                }
+
+                // check total migrated quantity matches the trigger resource's quantity
+                if total_quantity != self.resource.quantity {
                     return Err(ArmError::ProveFailed(
-                        "Invalid migrate resource value_ref".to_string(),
+                        "Wrong total migrate resource quantity".to_string(),
                     ));
                 }
 
-                if migrate_info
-                    .value_info
-                    .auth_pk
-                    .verify(
-                        AUTH_SIGNATURE_DOMAIN_V2,
-                        action_root,
-                        &migrate_info.auth_sig,
-                    )
-                    .is_err()
-                {
-                    return Err(ArmError::InvalidSignature);
-                }
-
-                // check migrate_resource quantity
-                if migrate_info.resource.quantity != self.resource.quantity {
-                    return Err(ArmError::ProveFailed(
-                        "Wrong migrate resource quantity".to_string(),
-                    ));
-                }
-
-                // compute migrate resource nullifier
-                let migrate_nf = migrate_info
-                    .resource
-                    .nullifier_from_commitment(&migrate_info.nf_key, &migrate_cm)?;
-
-                // check migrate_resource label_ref_v1
-                let migrate_label_ref_v1 =
-                    calculate_label_ref(&migrate_info.forwarder_addr, erc20_token_addr);
-                if migrate_info.resource.label_ref != migrate_label_ref_v1 {
-                    return Err(ArmError::ProveFailed(
-                        "Invalid migrate resource label_ref".to_string(),
-                    ));
-                }
-
-                encode_migrate_forwarder_input(
+                encode_migrate_forwarder_input_batch(
                     erc20_token_addr,
-                    self.resource.quantity,
-                    migrate_nf.as_bytes(),
-                    migrate_root.as_bytes(),
-                    migrate_info.resource.logic_ref.as_bytes(),
-                    &migrate_info.forwarder_addr,
+                    total_quantity,
+                    &batch_entries,
                 )?
             }
             _ => {
