@@ -58,17 +58,16 @@ pub struct ForwarderInfoV2 {
     // The ethereum_account_addr is not needed for migration
     pub ethereum_account_addr: Option<Vec<u8>>,
     pub permit_info: Option<PermitInfo>,
-    // The migrate info is added for v2 witness to support migration from v1 to v2
     pub migrate_info: Option<MigrateInfo>,
 }
 
-/// Maximum number of V1 resources that can be migrated in a single batch.
-pub const MAX_MIGRATE_BATCH_SIZE: usize = 10;
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MigrateInfo {
-    /// The batch of V1 resources being migrated by this trigger resource.
-    /// Must be non-empty and no larger than `MAX_MIGRATE_BATCH_SIZE`.
+    /// Single authorization signature over the action tree root, covering the whole
+    /// batch. All entries must share the same auth_pk for this signature to authorize
+    /// migration of every entry.
+    pub auth_sig: AuthoritySignature,
+    /// The batch of resources being migrated by this trigger resource. Must be non-empty.
     pub entries: Vec<MigrateEntry>,
 }
 
@@ -76,13 +75,10 @@ pub struct MigrateInfo {
 pub struct MigrateEntry {
     pub resource: Resource,
     pub nf_key: NullifierKey,
-    // Merkle path from cm-tree v1 to prove existence of the migrate_resource
+    // Merkle path from cm-tree to prove existence of the migrate_resource
     pub path: MerklePath,
-    pub auth_sig: AuthoritySignature,
     pub value_info: ValueInfo,
-    // The forwarder address in the migrate resource label_ref is still the v1 address.
-    // Not shared across entries: different entries may originate from different V1 or V2
-    // forwarder deployments.
+    // Different entries may originate from different forwarder deployments.
     pub forwarder_addr: Vec<u8>,
 }
 
@@ -214,11 +210,8 @@ impl TokenTransferWitnessV2 {
                         "Migration batch must not be empty".to_string(),
                     ));
                 }
-                if migrate_info.entries.len() > MAX_MIGRATE_BATCH_SIZE {
-                    return Err(ArmError::ProveFailed(
-                        "Migration batch exceeds maximum size".to_string(),
-                    ));
-                }
+
+                let batch_auth_pk = migrate_info.entries[0].value_info.auth_pk;
 
                 let mut total_quantity: u128 = 0;
                 let mut batch_entries = Vec::with_capacity(migrate_info.entries.len());
@@ -243,13 +236,12 @@ impl TokenTransferWitnessV2 {
                         ));
                     }
 
-                    if entry
-                        .value_info
-                        .auth_pk
-                        .verify(AUTH_SIGNATURE_DOMAIN_V2, action_root, &entry.auth_sig)
-                        .is_err()
-                    {
-                        return Err(ArmError::InvalidSignature);
+                    // all entries must share the same auth_pk, since the batch is
+                    // authorized by a single signature
+                    if entry.value_info.auth_pk != batch_auth_pk {
+                        return Err(ArmError::ProveFailed(
+                            "Migrate batch entries must share the same auth_pk".to_string(),
+                        ));
                     }
 
                     // compute migrate resource nullifier
@@ -285,6 +277,18 @@ impl TokenTransferWitnessV2 {
                     return Err(ArmError::ProveFailed(
                         "Wrong total migrate resource quantity".to_string(),
                     ));
+                }
+
+                // verify the single authorization signature covering the whole batch
+                if batch_auth_pk
+                    .verify(
+                        AUTH_SIGNATURE_DOMAIN_V2,
+                        action_root,
+                        &migrate_info.auth_sig,
+                    )
+                    .is_err()
+                {
+                    return Err(ArmError::InvalidSignature);
                 }
 
                 encode_migrate_forwarder_input_batch(

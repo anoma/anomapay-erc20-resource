@@ -131,13 +131,13 @@ fn create_migrate_resource_logic() -> TransferLogicV2 {
         nf_key.clone(),
         FORWARDER_ADDR_V2.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
+        auth_sig,
         vec![MigrateEntryParams {
             resource: resource_v1,
             nf_key: nf_key.clone(), // using the same nf_key for simplicity
             path: MerklePath::default(), // using default path for simplicity, only a real tx/action needs a valid path
             auth_pk,
             encryption_pk,
-            auth_sig,
             forwarder_addr: FORWARDER_ADDR_V1.to_vec(),
         }],
     )
@@ -297,14 +297,18 @@ fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
     };
     let self_nf_key = NullifierKey::from_bytes(NF_KEY_BYTES);
 
+    // All entries share the same auth_pk, since the batch is authorized by a
+    // single signature over that key.
+    let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
+    let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
+    let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
+
     let entries = (0..count)
         .map(|i| {
-            let seed = i + 1; // avoid an all-zero seed, which is an invalid signing key
+            let seed = i + 1; // avoid an all-zero seed, which is an invalid nullifier key
             let forwarder_addr_v1 = vec![i; 20];
             let label_ref = calculate_label_ref(&forwarder_addr_v1, &ERC20_TOKEN_ADDR);
             let nk_commitment = NullifierKey::from_bytes([seed; 32]).commit();
-            let auth_sk = AuthoritySigningKey::from_bytes(&[seed; 32]).unwrap();
-            let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
             let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
             let encryption_pk = generate_public_key(encryption_sk.inner());
             let value_info = ValueInfo {
@@ -321,7 +325,6 @@ fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
                 nk_commitment,
                 ..Default::default()
             };
-            let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
 
             MigrateEntryParams {
                 resource,
@@ -329,7 +332,6 @@ fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
                 path: MerklePath::default(),
                 auth_pk,
                 encryption_pk,
-                auth_sig,
                 forwarder_addr: forwarder_addr_v1,
             }
         })
@@ -341,6 +343,7 @@ fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
         self_nf_key,
         FORWARDER_ADDR_V2.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
+        auth_sig,
         entries,
     )
 }
@@ -385,15 +388,6 @@ fn test_negative_migration_with_empty_batch() {
         .unwrap()
         .entries
         .clear();
-    resource_logic.prove(ProofType::Succinct).unwrap_err();
-}
-
-#[test]
-fn test_negative_migration_with_batch_over_max_size() {
-    use anoma_rm_risc0::proving_system::ProofType;
-
-    // MAX_MIGRATE_BATCH_SIZE is 10; 11 entries must be rejected.
-    let resource_logic = create_migrate_resource_logic_batch(11);
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
 
@@ -504,7 +498,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
             transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2,
             resource_logic.witness.action_tree_root.as_bytes(),
         );
-        migrate_info.entries[0].auth_sig = wrong_auth_sig;
+        migrate_info.auth_sig = wrong_auth_sig;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 
@@ -523,7 +517,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
             transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2,
             wrong_action_tree_root.as_bytes(),
         );
-        migrate_info.entries[0].auth_sig = wrong_auth_sig;
+        migrate_info.auth_sig = wrong_auth_sig;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 
@@ -541,7 +535,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
             b"WrongDomain",
             resource_logic.witness.action_tree_root.as_bytes(),
         );
-        migrate_info.entries[0].auth_sig = wrong_auth_sig;
+        migrate_info.auth_sig = wrong_auth_sig;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
