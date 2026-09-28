@@ -28,20 +28,21 @@ pub const TOKEN_TRANSFER_V2_ELF: &[u8] = include_bytes!("../elf/token-transfer-g
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
     pub static ref TOKEN_TRANSFER_V2_ID: Digest =
-        Digest::from_hex("cd02f7a675004feb6c0ec65828eca44828c65da448aef2a09dea8306517a9419")
+        Digest::from_hex("beb5abf1ef91fc85a7284ae2350efb7712dcefa06642eefd332588235ffb5f3c")
             .unwrap();
 }
 
 /// Parameters describing one V1 resource being migrated as part of a batch.
+/// All entries in a batch must share the same `auth_pk`, since the batch is
+/// authorized by a single signature over that key.
 pub struct MigrateEntryParams {
     pub resource: Resource,
     pub nf_key: NullifierKey,
-    // Merkle path from cm-tree v1 to prove existence of the resource
+    // Merkle path from cm-tree to prove existence of the resource
     pub path: MerklePath,
     pub auth_pk: AuthorityVerifyingKey,
     pub encryption_pk: AffinePoint,
-    pub auth_sig: AuthoritySignature,
-    // forwarder address v1
+    // forwarder address of the migraged resource
     pub forwarder_addr: Vec<u8>,
 }
 
@@ -219,6 +220,8 @@ impl TransferLogicV2 {
         // forwarder address v2
         self_forwarder_addr: Vec<u8>,
         erc20_token_addr: Vec<u8>,
+        // single signature authorizing the whole batch, over the shared auth_pk
+        migrate_auth_sig: AuthoritySignature,
         migrate_entries: Vec<MigrateEntryParams>,
     ) -> Self {
         let label_info = LabelInfo {
@@ -232,12 +235,10 @@ impl TransferLogicV2 {
                 resource: params.resource,
                 nf_key: params.nf_key,
                 path: params.path,
-                auth_sig: params.auth_sig,
                 value_info: ValueInfo {
                     auth_pk: params.auth_pk,
                     encryption_pk: params.encryption_pk,
                 },
-                // forwarder address v1
                 forwarder_addr: params.forwarder_addr,
             })
             .collect();
@@ -246,7 +247,10 @@ impl TransferLogicV2 {
             call_type: CallTypeV2::Migrate,
             ethereum_account_addr: None,
             permit_info: None,
-            migrate_info: Some(MigrateInfo { entries }),
+            migrate_info: Some(MigrateInfo {
+                auth_sig: migrate_auth_sig,
+                entries,
+            }),
         };
 
         Self::new(
