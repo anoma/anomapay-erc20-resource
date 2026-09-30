@@ -1,4 +1,4 @@
-use crate::TransferLogicV2;
+use crate::{MigrateEntryParams, TransferLogicV2};
 use anoma_rm_risc0::{
     Digest, action,
     action_tree::ActionTree,
@@ -6,7 +6,6 @@ use anoma_rm_risc0::{
     delta_proof::DeltaWitness,
     error::ArmError,
     logic_proof::LogicProver,
-    merkle_path::MerklePath,
     nullifier_key::NullifierKey,
     proving_system::ProofType,
     resource::{ConsumedResourceWitness, Resource},
@@ -24,14 +23,11 @@ pub fn construct_migrate_tx(
     forwarder_addr: Vec<u8>,
     erc20_token_addr: Vec<u8>,
 
-    // Parameters for migrated resource via forwarder
-    migrated_resource: Resource,
-    migrated_nf_key: NullifierKey,
-    migrated_resource_path: MerklePath,
-    migrated_auth_pk: AuthorityVerifyingKey,
-    migrated_encryption_pk: AffinePoint,
-    migrated_auth_sig: AuthoritySignature,
-    migrated_forwarder_addr: Vec<u8>,
+    // Single signature authorizing the whole batch, over the auth_pk shared by
+    // every entry below.
+    migrate_auth_sig: AuthoritySignature,
+    // Batch of resources being migrated by the consumed (trigger) resource.
+    migrate_entries: Vec<MigrateEntryParams>,
 
     // Parameters for the created resource
     created_resource: Resource,
@@ -62,13 +58,8 @@ pub fn construct_migrate_tx(
         consumed_nf_key,
         forwarder_addr.clone(),
         erc20_token_addr.clone(),
-        migrated_resource,
-        migrated_nf_key,
-        migrated_resource_path,
-        migrated_auth_pk,
-        migrated_encryption_pk,
-        migrated_auth_sig,
-        migrated_forwarder_addr,
+        migrate_auth_sig,
+        migrate_entries,
     );
     let consumed_logic_proof = consumed_resource_logic.prove(ProofType::Groth16)?;
 
@@ -102,6 +93,7 @@ fn simple_migrate_test() {
     use anoma_rm_risc0::{
         compliance::INITIAL_ROOT,
         constants::{init_kind_table_from_file, kind_table_hash},
+        merkle_path::MerklePath,
         nullifier_key::{self, NullifierKey},
         proving_system::JournalEncoding,
         resource::Resource,
@@ -121,38 +113,66 @@ fn simple_migrate_test() {
     let kind_table_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("kind_table.json");
     init_kind_table_from_file(&kind_table_path).unwrap();
 
-    // Common parameters
-    let forwarder_addr_v1 = vec![0u8; 20];
+    // Common parameters. Two migrated resources, each from a different
+    // forwarder deployment, but sharing one erc20 token address.
+    let forwarder_addr_v1_a = vec![0u8; 20];
+    let forwarder_addr_v1_b = vec![10u8; 20];
     let logic_ref_v1 = Digest::default();
     let forwarder_addr_v2 = vec![1u8; 20];
     let erc20_token_addr = vec![2u8; 20];
-    let quantity = 100;
-    let label_ref = calculate_label_ref(&forwarder_addr_v1, &erc20_token_addr);
+    let quantity_a = 60;
+    let quantity_b = 40;
+    let label_ref_v1_a = calculate_label_ref(&forwarder_addr_v1_a, &erc20_token_addr);
+    let label_ref_v1_b = calculate_label_ref(&forwarder_addr_v1_b, &erc20_token_addr);
     let label_ref_v2 = calculate_label_ref(&forwarder_addr_v2, &erc20_token_addr);
 
-    // Construct the migrated resource
+    // Single authority shared by every entry in the batch: the batch is
+    // authorized by one signature over this key.
     let migrated_auth_sk = AuthoritySigningKey::from_bytes(&[9u8; 32]).unwrap();
     let migrated_auth_pk = AuthorityVerifyingKey::from_signing_key(&migrated_auth_sk);
-    let (_migrated_encryption_sk, migrated_encryption_pk) = random_keypair();
-    let migrated_nf_key = NullifierKey::default();
-    let migrated_nf_cm = migrated_nf_key.commit();
-    let value_info = ValueInfo {
-        auth_pk: migrated_auth_pk,
-        encryption_pk: migrated_encryption_pk,
-    };
-    let migrated_value_ref = calculate_persistent_value_ref(&value_info);
-    let migrated_resource = Resource {
-        logic_ref: logic_ref_v1,
-        nk_commitment: migrated_nf_cm,
-        label_ref,
-        value_ref: migrated_value_ref,
-        quantity,
-        is_ephemeral: false,
-        ..Default::default()
-    };
 
-    let migrated_cm = migrated_resource.commitment();
-    println!("Migrated resource cm: {:?}", migrated_cm);
+    // Construct the batch of migrated resources.
+    let mut migrate_entries = Vec::new();
+    for (forwarder_addr_v1, label_ref, quantity, seed) in [
+        (forwarder_addr_v1_a.clone(), label_ref_v1_a, quantity_a, 9u8),
+        (
+            forwarder_addr_v1_b.clone(),
+            label_ref_v1_b,
+            quantity_b,
+            19u8,
+        ),
+    ] {
+        let (_migrated_encryption_sk, migrated_encryption_pk) = random_keypair();
+        let migrated_nf_key = NullifierKey::from_bytes([seed; 32]);
+        let migrated_nf_cm = migrated_nf_key.commit();
+        let value_info = ValueInfo {
+            auth_pk: migrated_auth_pk,
+            encryption_pk: migrated_encryption_pk,
+        };
+        let migrated_value_ref = calculate_persistent_value_ref(&value_info);
+        let migrated_resource = Resource {
+            logic_ref: logic_ref_v1,
+            nk_commitment: migrated_nf_cm,
+            label_ref,
+            value_ref: migrated_value_ref,
+            quantity,
+            is_ephemeral: false,
+            ..Default::default()
+        };
+
+        let migrated_cm = migrated_resource.commitment();
+        println!("Migrated resource cm: {:?}", migrated_cm);
+
+        migrate_entries.push(MigrateEntryParams {
+            resource: migrated_resource,
+            nf_key: migrated_nf_key,
+            path: MerklePath::from_path(&[]), // dummy path
+            auth_pk: migrated_auth_pk,
+            encryption_pk: migrated_encryption_pk,
+            forwarder_addr: forwarder_addr_v1,
+        });
+    }
+    let total_quantity = quantity_a + quantity_b;
 
     // Construct the consumed resource
     let (consumed_nf_key, consumed_nf_cm) = nullifier_key::random_pair();
@@ -160,7 +180,7 @@ fn simple_migrate_test() {
         logic_ref: TransferLogicV2::verifying_key(),
         label_ref: label_ref_v2,
         nk_commitment: consumed_nf_cm,
-        quantity,
+        quantity: total_quantity,
         is_ephemeral: true,
         ..Default::default()
     };
@@ -184,7 +204,7 @@ fn simple_migrate_test() {
         nk_commitment: created_nf_cm,
         label_ref: label_ref_v2,
         value_ref: calculate_persistent_value_ref(&value_info),
-        quantity,
+        quantity: total_quantity,
         is_ephemeral: false,
         nonce: Resource::derive_nonce_from_nullifiers(0, &[consumed_nf]).unwrap(),
         ..Default::default()
@@ -192,12 +212,10 @@ fn simple_migrate_test() {
 
     let created_cm = created_resource.commitment();
 
-    // Generate the authorization signature
+    // Generate the authorization signature, now that the action tree root is known.
     let action_tree = ActionTree::new(vec![consumed_nf, created_cm]);
-    let migrated_auth_sig = migrated_auth_sk.sign(
-        AUTH_SIGNATURE_DOMAIN_V2,
-        action_tree.root().unwrap().as_bytes(),
-    );
+    let action_root = action_tree.root().unwrap();
+    let migrate_auth_sig = migrated_auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_root.as_bytes());
 
     // Construct the migration transaction
     let tx_start_timer = std::time::Instant::now();
@@ -207,13 +225,8 @@ fn simple_migrate_test() {
         consumed_nf_key,
         forwarder_addr_v2,
         erc20_token_addr,
-        migrated_resource,
-        migrated_nf_key,
-        MerklePath::from_path(&[]), // dummy path
-        migrated_auth_pk,
-        migrated_encryption_pk,
-        migrated_auth_sig,
-        forwarder_addr_v1,
+        migrate_auth_sig,
+        migrate_entries,
         created_resource,
         created_discovery_pk,
         created_auth_pk,

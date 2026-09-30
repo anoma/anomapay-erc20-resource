@@ -100,9 +100,10 @@ fn create_persistent_resource_v1() -> Resource {
     }
 }
 
-// Create a valid migrate resource logic in v2 for testing
+// Create a valid migrate resource logic in v2 for testing, migrating a single-entry batch.
 fn create_migrate_resource_logic() -> TransferLogicV2 {
     use anoma_rm_risc0::merkle_path::MerklePath;
+    use transfer_library_v2::MigrateEntryParams;
     use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
 
     // mock a resource to be migrated in v1
@@ -130,13 +131,15 @@ fn create_migrate_resource_logic() -> TransferLogicV2 {
         nf_key.clone(),
         FORWARDER_ADDR_V2.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
-        resource_v1,
-        nf_key,                // using the same nf_key for simplicity
-        MerklePath::default(), // using default path for simplicity, only a real tx/action needs a valid path
-        auth_pk,
-        encryption_pk,
         auth_sig,
-        FORWARDER_ADDR_V1.to_vec(),
+        vec![MigrateEntryParams {
+            resource: resource_v1,
+            nf_key: nf_key.clone(), // using the same nf_key for simplicity
+            path: MerklePath::default(), // using default path for simplicity, only a real tx/action needs a valid path
+            auth_pk,
+            encryption_pk,
+            forwarder_addr: FORWARDER_ADDR_V1.to_vec(),
+        }],
     )
 }
 
@@ -277,6 +280,74 @@ fn test_transfer_v2() {
     assert_eq!(deserialized.resource, created_resource, "Resource mismatch");
 }
 
+// Create a migrate resource logic in v2 migrating a batch of `count` V1 resources,
+// each from its own forwarder address, sharing one erc20 token address, and each
+// worth QUANTITY / count (so the total matches the trigger resource's quantity).
+fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
+    use anoma_rm_risc0::merkle_path::MerklePath;
+    use transfer_library_v2::MigrateEntryParams;
+    use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
+
+    let action_tree_root = Digest::default();
+    let per_entry_quantity = QUANTITY / count as u128;
+
+    let self_resource = Resource {
+        quantity: per_entry_quantity * count as u128,
+        ..create_ephemeral_resource_v2()
+    };
+    let self_nf_key = NullifierKey::from_bytes(NF_KEY_BYTES);
+
+    // All entries share the same auth_pk, since the batch is authorized by a
+    // single signature over that key.
+    let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
+    let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
+    let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
+
+    let entries = (0..count)
+        .map(|i| {
+            let seed = i + 1; // avoid an all-zero seed, which is an invalid nullifier key
+            let forwarder_addr_v1 = vec![i; 20];
+            let label_ref = calculate_label_ref(&forwarder_addr_v1, &ERC20_TOKEN_ADDR);
+            let nk_commitment = NullifierKey::from_bytes([seed; 32]).commit();
+            let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
+            let encryption_pk = generate_public_key(encryption_sk.inner());
+            let value_info = ValueInfo {
+                auth_pk,
+                encryption_pk,
+            };
+            let value_ref = calculate_persistent_value_ref(&value_info);
+            let resource = Resource {
+                logic_ref: TransferLogic::verifying_key(),
+                label_ref,
+                value_ref,
+                quantity: per_entry_quantity,
+                is_ephemeral: false,
+                nk_commitment,
+                ..Default::default()
+            };
+
+            MigrateEntryParams {
+                resource,
+                nf_key: NullifierKey::from_bytes([seed; 32]),
+                path: MerklePath::default(),
+                auth_pk,
+                encryption_pk,
+                forwarder_addr: forwarder_addr_v1,
+            }
+        })
+        .collect();
+
+    TransferLogicV2::migrate_resource_logic(
+        self_resource,
+        action_tree_root,
+        self_nf_key,
+        FORWARDER_ADDR_V2.to_vec(),
+        ERC20_TOKEN_ADDR.to_vec(),
+        auth_sig,
+        entries,
+    )
+}
+
 #[test]
 fn test_positive_migration() {
     use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
@@ -286,6 +357,38 @@ fn test_positive_migration() {
     let proof = resource_logic.prove(ProofType::Succinct).unwrap();
 
     logic_proof::verify(&proof).unwrap();
+}
+
+#[test]
+fn test_positive_batch_migration() {
+    use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
+
+    // Migrate a batch of 3 resources, each from its own V1 forwarder address,
+    // merging into the single created resource.
+    let resource_logic = create_migrate_resource_logic_batch(3);
+
+    let proof = resource_logic.prove(ProofType::Succinct).unwrap();
+
+    logic_proof::verify(&proof).unwrap();
+}
+
+#[test]
+fn test_negative_migration_with_empty_batch() {
+    use anoma_rm_risc0::proving_system::ProofType;
+
+    let mut resource_logic = create_migrate_resource_logic();
+
+    resource_logic
+        .witness
+        .forwarder_info_v2
+        .as_mut()
+        .unwrap()
+        .migrate_info
+        .as_mut()
+        .unwrap()
+        .entries
+        .clear();
+    resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
 
 #[test]
@@ -329,7 +432,7 @@ fn test_negative_migration_with_wrong_is_ephemeral_in_migrate_info() {
         .unwrap()
         .migrate_info
     {
-        migrate_info.resource.is_ephemeral = true; // should be false for persistent resource
+        migrate_info.entries[0].resource.is_ephemeral = true; // should be false for persistent resource
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
@@ -350,7 +453,7 @@ fn test_negative_migration_with_wrong_auth_pk_in_value_info() {
     {
         let wrong_auth_sk = AuthoritySigningKey::from_bytes(&UNEXPECTED_AUTH_SK).unwrap();
         let wrong_auth_pk = AuthorityVerifyingKey::from_signing_key(&wrong_auth_sk);
-        migrate_info.value_info.auth_pk = wrong_auth_pk;
+        migrate_info.entries[0].value_info.auth_pk = wrong_auth_pk;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
@@ -371,7 +474,7 @@ fn test_negative_migration_with_wrong_encryption_pk_in_value_info() {
     {
         let wrong_encryption_sk = SecretKey::new(Scalar::from(UNEXPECTED_ENCRYPTION_SK));
         let wrong_encryption_pk = generate_public_key(wrong_encryption_sk.inner());
-        migrate_info.value_info.encryption_pk = wrong_encryption_pk;
+        migrate_info.entries[0].value_info.encryption_pk = wrong_encryption_pk;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
@@ -451,7 +554,7 @@ fn test_negative_migration_with_wrong_quantity() {
         .unwrap()
         .migrate_info
     {
-        migrate_info.resource.quantity = UNEXPECTED_QUANTITY;
+        migrate_info.entries[0].resource.quantity = UNEXPECTED_QUANTITY;
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
@@ -469,7 +572,7 @@ fn test_negative_migration_with_wrong_nf_key() {
         .unwrap()
         .migrate_info
     {
-        migrate_info.nf_key = NullifierKey::from_bytes(UNEXPECTED_NF_KEY_BYTES);
+        migrate_info.entries[0].nf_key = NullifierKey::from_bytes(UNEXPECTED_NF_KEY_BYTES);
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
@@ -488,7 +591,7 @@ fn test_negative_migration_with_wrong_forwarder_addr_in_migrate_info() {
         .unwrap()
         .migrate_info
     {
-        migrate_info.forwarder_addr = UNEXPECTED_FORWARDER_ADDR.to_vec();
+        migrate_info.entries[0].forwarder_addr = UNEXPECTED_FORWARDER_ADDR.to_vec();
     }
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
