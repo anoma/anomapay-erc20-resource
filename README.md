@@ -13,7 +13,7 @@ versioned and reused independently of the backend services that consume them.
 There are two generations of the resource:
 
 - **v1** — the original token-transfer resource (wrap / unwrap / transfer).
-- **v2** — adds **migration** support (migrating a v1 resource to v2) on top of
+- **emergency-migrating** — adds **migration** support (migrating a v1 resource) on top of
   the v1 capabilities.
 
 ## Layout
@@ -25,22 +25,22 @@ not share the host workspace's lockfile or profile.
 
 ```
 .
-├── transfer_witness/        # v1 witness data + resource-logic constraints
-├── transfer_witness_v2/     # v2 witness data (depends on v1)
-├── transfer_library/        # v1 host API: TransferLogic, guest ELF + ImageID
-├── transfer_library_v2/     # v2 host API: TransferLogicV2 + migration tx builder
-├── transfer_circuit/        # v1 RISC Zero guest program  (excluded workspace)
-└── transfer_circuit_v2/     # v2 RISC Zero guest program  (excluded workspace)
+├── transfer_witness/                        # v1 witness data + resource-logic constraints
+├── emergency_migrating_transfer_witness/    # emergency-migrating witness data (depends on v1)
+├── transfer_library/                        # v1 host API: TransferLogic, guest ELF + ImageID
+├── emergency_migrating_transfer_library/    # emergency-migrating host API + migration tx builder
+├── transfer_circuit/                        # v1 RISC Zero guest program  (excluded workspace)
+└── emergency_migrating_transfer_circuit/    # emergency-migrating RISC Zero guest program  (excluded workspace)
 ```
 
 ### Dependency graph
 
 ```
-transfer_witness ─────────────┬─────────────► transfer_library ───► transfer_circuit
-        ▲                      │                      ▲                     │
-        │                      │                      │                     │ (path deps,
-        └── transfer_witness_v2 ──► transfer_library_v2 ──► transfer_circuit_v2
-                                                            (guest embeds the library ELF)
+transfer_witness ──────────────────────────────────────────────────────► transfer_library ───► transfer_circuit
+        ▲                                                                         ▲                     │
+        │                                                                         │                     │ (path deps,
+        └── emergency_migrating_transfer_witness ──► emergency_migrating_transfer_library ──► emergency_migrating_transfer_circuit
+                                                                                              (guest embeds the library ELF)
 ```
 
 - `transfer_witness` is the leaf; everything else builds on it.
@@ -61,10 +61,10 @@ that the guest executes, plus the Solidity-ABI (`alloy-sol-types`) encoding for
 the EVM forwarder `Wrap`/`Unwrap` calldata. Authorization domain:
 `TokenTransferAuthorization`.
 
-### `transfer_witness_v2`
-`TokenTransferWitnessV2` — the v2 witness, reusing the shared v1 building blocks
+### `emergency_migrating_transfer_witness`
+`EmergencyMigratingTokenTransferWitness` — the emergency-migrating witness, reusing the shared v1 building blocks
 (`EncryptionInfo`, `LabelInfo`, `ValueInfo`, `PermitInfo`, …) and adding
-`ForwarderInfoV2` with `MigrateInfo` to support migrating a v1 resource to v2.
+`NewForwarderInfo` with `MigrateInfo` to support migrating a v1 resource.
 Authorization domain: `TokenTransferAuthorizationV2`.
 
 ### `transfer_library`
@@ -75,14 +75,14 @@ resource-logic proofs. Exposes:
 - `TOKEN_TRANSFER_ID` — the guest `ImageID` (a `Digest`) used for verification
   on- and off-chain.
 
-### `transfer_library_v2`
-v2 host-side API. `TransferLogicV2` plus `migrate_tx::construct_migrate_tx`,
+### `emergency_migrating_transfer_library`
+Emergency-migrating host-side API. `EmergencyMigratingTransferLogic` plus `migrate_tx::construct_migrate_tx`,
 which assembles a complete ARM `Transaction` (compliance units, logic proofs,
-delta proof) that migrates a v1 resource to v2. Exposes `TOKEN_TRANSFER_V2_ELF`
-and `TOKEN_TRANSFER_V2_ID` (`elf/token-transfer-guest-v2.bin`).
+delta proof) that migrates a v1 resource. Exposes `EMERGENCY_MIGRATING_TOKEN_TRANSFER_ELF`
+and `EMERGENCY_MIGRATING_TOKEN_TRANSFER_ID` (`elf/emergency-migrating-token-transfer-guest.bin`).
 
-### `transfer_circuit` / `transfer_circuit_v2`
-The RISC Zero guest programs (`token-transfer` / `token-transfer-v2`). Each
+### `transfer_circuit` / `emergency_migrating_transfer_circuit`
+The RISC Zero guest programs (`token-transfer` / `emergency-migrating-token-transfer`). Each
 `methods/guest` main simply reads a witness, runs `witness.constrain()`, and
 commits the resulting `LogicInstance`:
 
@@ -93,12 +93,12 @@ env::commit(&instance);
 ```
 
 Their integration tests (`src/test.rs`) exercise wrap/unwrap/transfer (and, for
-v2, migration) end to end. See each crate's `README.md` for how to reproducibly
+the emergency-migrating circuit, migration) end to end. See each crate's `README.md` for how to reproducibly
 build the ELF and `ImageID` with `cargo risczero build`.
 
 ## The guest ELF / `ImageID` model
 
-`TOKEN_TRANSFER_ID` (and `TOKEN_TRANSFER_V2_ID`) is the `ImageID` of a **specific
+`TOKEN_TRANSFER_ID` (and `EMERGENCY_MIGRATING_TOKEN_TRANSFER_ID`) is the `ImageID` of a **specific
 committed build** of the guest ELF — not necessarily of a fresh
 `cargo risczero build` at HEAD. The `ImageID` is a digest over the entire
 compiled guest, so it changes whenever *any* transitive input changes
@@ -127,8 +127,8 @@ cargo test  --workspace
 # Each circuit is a separate workspace — build/test from its own directory.
 # RISC0_DEV_MODE=1 skips real proving so tests run fast (dev/CI only — it does
 # NOT produce verifiable proofs).
-cd transfer_circuit    && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
-cd transfer_circuit_v2 && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
+cd transfer_circuit                        && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
+cd emergency_migrating_transfer_circuit    && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
 ```
 
 > The dev profile sets `opt-level = 3` for the whole workspace: running an
@@ -162,7 +162,7 @@ Our software undergoes regular audits:
 
 ## Versioning
 
-The workspace crates (`transfer_witness*`, `transfer_library*`) share the
+The workspace crates (`transfer_witness`, `emergency_migrating_transfer_witness`, `transfer_library`, `emergency_migrating_transfer_library`) share the
 version in `[workspace.package]` (currently `2.0.0`). The circuit crates are
 versioned independently (currently `2.0.0`).
 

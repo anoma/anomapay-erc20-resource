@@ -1496,6 +1496,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
+name = "emergency_migrating_transfer_library"
+version = "3.0.0-rc.3"
+dependencies = [
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "emergency_migrating_transfer_witness",
+ "hex",
+ "k256",
+ "lazy_static",
+ "serde",
+ "transfer_witness",
+]
+
+[[package]]
+name = "emergency_migrating_transfer_witness"
+version = "3.0.0-rc.3"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "bincode",
+ "serde",
+ "transfer_witness",
+]
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4831,20 +4858,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "transfer_library_v2"
-version = "3.0.0-rc.3"
-dependencies = [
- "anoma-rm-risc0",
- "anoma-rm-risc0-gadgets",
- "hex",
- "k256",
- "lazy_static",
- "serde",
- "transfer_witness",
- "transfer_witness_v2",
-]
-
-[[package]]
 name = "transfer_witness"
 version = "3.0.0-rc.3"
 dependencies = [
@@ -4857,19 +4870,6 @@ dependencies = [
  "k256",
  "rand 0.9.4",
  "serde",
-]
-
-[[package]]
-name = "transfer_witness_v2"
-version = "3.0.0-rc.3"
-dependencies = [
- "alloy-primitives",
- "alloy-sol-types",
- "anoma-rm-risc0",
- "anoma-rm-risc0-gadgets",
- "bincode",
- "serde",
- "transfer_witness",
 ]
 
 [[package]]

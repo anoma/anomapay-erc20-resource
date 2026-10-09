@@ -1473,6 +1473,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
+name = "emergency-migrating-token-transfer"
+version = "2.0.0"
+dependencies = [
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "bincode",
+ "emergency_migrating_transfer_library",
+ "emergency_migrating_transfer_witness",
+ "k256",
+ "risc0-zkvm",
+ "transfer_library",
+ "transfer_witness",
+]
+
+[[package]]
+name = "emergency_migrating_transfer_library"
+version = "3.0.0-rc.3"
+dependencies = [
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "emergency_migrating_transfer_witness",
+ "hex",
+ "k256",
+ "lazy_static",
+ "serde",
+ "transfer_witness",
+]
+
+[[package]]
+name = "emergency_migrating_transfer_witness"
+version = "3.0.0-rc.3"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "bincode",
+ "serde",
+ "transfer_witness",
+]
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4553,21 +4595,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
-name = "token-transfer-v2"
-version = "2.0.0"
-dependencies = [
- "anoma-rm-risc0",
- "anoma-rm-risc0-gadgets",
- "bincode",
- "k256",
- "risc0-zkvm",
- "transfer_library",
- "transfer_library_v2",
- "transfer_witness",
- "transfer_witness_v2",
-]
-
-[[package]]
 name = "tokio"
 version = "1.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4776,20 +4803,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "transfer_library_v2"
-version = "3.0.0-rc.3"
-dependencies = [
- "anoma-rm-risc0",
- "anoma-rm-risc0-gadgets",
- "hex",
- "k256",
- "lazy_static",
- "serde",
- "transfer_witness",
- "transfer_witness_v2",
-]
-
-[[package]]
 name = "transfer_witness"
 version = "3.0.0-rc.3"
 dependencies = [
@@ -4801,19 +4814,6 @@ dependencies = [
  "k256",
  "rand 0.9.2",
  "serde",
-]
-
-[[package]]
-name = "transfer_witness_v2"
-version = "3.0.0-rc.3"
-dependencies = [
- "alloy-primitives",
- "alloy-sol-types",
- "anoma-rm-risc0",
- "anoma-rm-risc0-gadgets",
- "bincode",
- "serde",
- "transfer_witness",
 ]
 
 [[package]]

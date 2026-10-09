@@ -1,9 +1,9 @@
 //! The transfer witness library holds the struct to generate proofs over resource logics for
 //! simple transfer resources in the Anoma Pay application.
 //!
-pub mod call_type_v2;
-use crate::call_type_v2::{
-    CallTypeV2, MigrateForwarderEntry, encode_migrate_forwarder_input_batch,
+pub mod call_type;
+use crate::call_type::{
+    EmergencyMigratingCallType, MigrateForwarderEntry, encode_migrate_forwarder_input_batch,
 };
 pub use anoma_rm_risc0::resource_logic::LogicCircuit;
 use anoma_rm_risc0::{
@@ -26,12 +26,13 @@ use transfer_witness::{
     call_type::{encode_unwrap_forwarder_input, encode_wrap_forwarder_input},
 };
 
-pub const AUTH_SIGNATURE_DOMAIN_V2: &[u8] = b"TokenTransferAuthorizationV2";
+pub const EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN: &[u8] =
+    b"TokenTransferAuthorizationEmergencyMigrating";
 
-/// The TokenTransferWitnessV2 holds all the information necessary to generate a proof of the
+/// The EmergencyMigratingTokenTransferWitness holds all the information necessary to generate a proof of the
 /// resource logic of a given resource.
 #[derive(Clone, Default, Serialize, Deserialize)]
-pub struct TokenTransferWitnessV2 {
+pub struct EmergencyMigratingTokenTransferWitness {
     /// Resource this witness is about.
     pub resource: Resource,
     /// Is this a consumed or created resource.
@@ -44,8 +45,8 @@ pub struct TokenTransferWitnessV2 {
     pub auth_sig: Option<AuthoritySignature>,
     /// See EncryptionInfo struct.
     pub encryption_info: Option<EncryptionInfo>,
-    /// See ForwarderInfoV2 struct.
-    pub forwarder_info_v2: Option<ForwarderInfoV2>,
+    /// See NewForwarderInfo struct.
+    pub new_forwarder_info: Option<NewForwarderInfo>,
     /// See LabelInfo struct.
     pub label_info: Option<LabelInfo>,
     /// See ValueInfo Struct
@@ -53,8 +54,8 @@ pub struct TokenTransferWitnessV2 {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ForwarderInfoV2 {
-    pub call_type: CallTypeV2,
+pub struct NewForwarderInfo {
+    pub call_type: EmergencyMigratingCallType,
     // The ethereum_account_addr is not needed for migration
     pub ethereum_account_addr: Option<Vec<u8>>,
     pub permit_info: Option<PermitInfo>,
@@ -82,7 +83,7 @@ pub struct MigrateEntry {
     pub forwarder_addr: Vec<u8>,
 }
 
-impl TokenTransferWitnessV2 {
+impl EmergencyMigratingTokenTransferWitness {
     // Compute the tag
     pub fn tag(&self) -> Result<Digest, ArmError> {
         if self.is_consumed {
@@ -116,7 +117,7 @@ impl TokenTransferWitnessV2 {
         action_root: &[u8],
     ) -> Result<Vec<ExpirableBlob>, ArmError> {
         let forwarder_info = self
-            .forwarder_info_v2
+            .new_forwarder_info
             .as_ref()
             .ok_or(ArmError::MissingField("Forwarder info"))?;
 
@@ -136,7 +137,7 @@ impl TokenTransferWitnessV2 {
         }
 
         let inputs = match forwarder_info.call_type {
-            CallTypeV2::Wrap => {
+            EmergencyMigratingCallType::Wrap => {
                 if !self.is_consumed {
                     return Err(ArmError::ProveFailed(
                         "Token wraps must be triggered by a consumed resource".to_string(),
@@ -163,7 +164,7 @@ impl TokenTransferWitnessV2 {
                     permit_info.permit_sig.as_ref(),
                 )?
             }
-            CallTypeV2::Unwrap => {
+            EmergencyMigratingCallType::Unwrap => {
                 if self.is_consumed {
                     return Err(ArmError::ProveFailed(
                         "Token unwraps must be triggered by a created resource".to_string(),
@@ -193,7 +194,7 @@ impl TokenTransferWitnessV2 {
                     self.resource.quantity,
                 )?
             }
-            CallTypeV2::Migrate => {
+            EmergencyMigratingCallType::Migrate => {
                 if !self.is_consumed {
                     return Err(ArmError::ProveFailed(
                         "Token migration must be triggered by a consumed resource".to_string(),
@@ -282,7 +283,7 @@ impl TokenTransferWitnessV2 {
                 // verify the single authorization signature covering the whole batch
                 if batch_auth_pk
                     .verify(
-                        AUTH_SIGNATURE_DOMAIN_V2,
+                        EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
                         action_root,
                         &migrate_info.auth_sig,
                     )
@@ -324,7 +325,11 @@ impl TokenTransferWitnessV2 {
         // Verify the authorization signature
         if value_info
             .auth_pk
-            .verify(AUTH_SIGNATURE_DOMAIN_V2, action_root, auth_sig)
+            .verify(
+                EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
+                action_root,
+                auth_sig,
+            )
             .is_err()
         {
             return Err(ArmError::InvalidSignature);
@@ -395,7 +400,7 @@ impl TokenTransferWitnessV2 {
     }
 }
 
-impl LogicCircuit for TokenTransferWitnessV2 {
+impl LogicCircuit for EmergencyMigratingTokenTransferWitness {
     fn constrain(&self) -> Result<LogicInstance, ArmError> {
         // Load resources
         let tag = self.tag()?;
@@ -439,7 +444,7 @@ impl LogicCircuit for TokenTransferWitnessV2 {
     }
 }
 
-impl TokenTransferWitnessV2 {
+impl EmergencyMigratingTokenTransferWitness {
     /// Create a new transfer witness.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -449,7 +454,7 @@ impl TokenTransferWitnessV2 {
         nf_key: Option<NullifierKey>,
         auth_sig: Option<AuthoritySignature>,
         encryption_info: Option<EncryptionInfo>,
-        forwarder_info_v2: Option<ForwarderInfoV2>,
+        new_forwarder_info: Option<NewForwarderInfo>,
         label_info: Option<LabelInfo>,
         value_info: Option<ValueInfo>,
     ) -> Self {
@@ -460,7 +465,7 @@ impl TokenTransferWitnessV2 {
             nf_key,
             auth_sig,
             encryption_info,
-            forwarder_info_v2,
+            new_forwarder_info,
             label_info,
             value_info,
         }

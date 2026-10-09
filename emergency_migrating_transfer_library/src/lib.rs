@@ -1,7 +1,7 @@
 //! the transfer library contains the definition of the resource logics for the simple transfer
 //! application.
 //!
-//! Of particular interest are the TransferLogicV2 struct, and the TokenTransferWitnessV2 structs.
+//! Of particular interest are the EmergencyMigratingTransferLogic struct, and the EmergencyMigratingTokenTransferWitness structs.
 
 pub mod migrate_tx;
 
@@ -15,20 +15,22 @@ use k256::AffinePoint;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-use transfer_witness_v2::{
-    ForwarderInfoV2, MigrateEntry, MigrateInfo, TokenTransferWitnessV2, call_type_v2::CallTypeV2,
+use emergency_migrating_transfer_witness::{
+    EmergencyMigratingTokenTransferWitness, MigrateEntry, MigrateInfo, NewForwarderInfo,
+    call_type::EmergencyMigratingCallType,
 };
 
 use transfer_witness::{EncryptionInfo, LabelInfo, PermitInfo, ValueInfo};
 
 /// The binary program that is executed in the zkvm to generate proofs.
 /// This program takes in a witness as argument and runs the constraint function on it.
-pub const TOKEN_TRANSFER_V2_ELF: &[u8] = include_bytes!("../elf/token-transfer-guest-v2.bin");
+pub const EMERGENCY_MIGRATING_TOKEN_TRANSFER_ELF: &[u8] =
+    include_bytes!("../elf/emergency-migrating-token-transfer-guest.bin");
 
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
-    pub static ref TOKEN_TRANSFER_V2_ID: Digest =
-        Digest::from_hex("5482722fcc17653be77d112484e8d6a7737eb75b60379efe7ce0b78843908132")
+    pub static ref EMERGENCY_MIGRATING_TOKEN_TRANSFER_ID: Digest =
+        Digest::from_hex("8818513d72fe9f0e920f2b33010de7821d254d8adbdf526bd1e948f8a164c346")
             .unwrap();
 }
 
@@ -47,14 +49,14 @@ pub struct MigrateEntryParams {
 }
 
 /// Holds the transfer resource logic.
-/// The witness is the input to create a proof. So a TransferLogicV2 can be used to generate proof
+/// The witness is the input to create a proof. So an EmergencyMigratingTransferLogic can be used to generate proof
 /// that the resource logics held within it are actually correct.
 #[derive(Clone, Default, Deserialize, Serialize)]
-pub struct TransferLogicV2 {
-    pub witness: TokenTransferWitnessV2,
+pub struct EmergencyMigratingTransferLogic {
+    pub witness: EmergencyMigratingTokenTransferWitness,
 }
 
-impl TransferLogicV2 {
+impl EmergencyMigratingTransferLogic {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         resource: Resource,
@@ -63,12 +65,12 @@ impl TransferLogicV2 {
         nf_key: Option<NullifierKey>,
         auth_sig: Option<AuthoritySignature>,
         encryption_info: Option<EncryptionInfo>,
-        forwarder_info: Option<ForwarderInfoV2>,
+        forwarder_info: Option<NewForwarderInfo>,
         label_info: Option<LabelInfo>,
         value_info: Option<ValueInfo>,
     ) -> Self {
         Self {
-            witness: TokenTransferWitnessV2::new(
+            witness: EmergencyMigratingTokenTransferWitness::new(
                 resource,
                 is_consumed,
                 action_tree_root,
@@ -157,8 +159,8 @@ impl TransferLogicV2 {
             permit_deadline,
             permit_sig,
         };
-        let forwarder_info = ForwarderInfoV2 {
-            call_type: CallTypeV2::Wrap,
+        let forwarder_info = NewForwarderInfo {
+            call_type: EmergencyMigratingCallType::Wrap,
             ethereum_account_addr: Some(ethereum_account_addr),
             permit_info: Some(permit_info),
             migrate_info: None,
@@ -189,8 +191,8 @@ impl TransferLogicV2 {
         erc20_token_addr: Vec<u8>,
         ethereum_account_addr: Vec<u8>,
     ) -> Self {
-        let forwarder_info = ForwarderInfoV2 {
-            call_type: CallTypeV2::Unwrap,
+        let forwarder_info = NewForwarderInfo {
+            call_type: EmergencyMigratingCallType::Unwrap,
             ethereum_account_addr: Some(ethereum_account_addr),
             permit_info: None,
             migrate_info: None,
@@ -243,8 +245,8 @@ impl TransferLogicV2 {
             })
             .collect();
 
-        let forwarder_info = ForwarderInfoV2 {
-            call_type: CallTypeV2::Migrate,
+        let forwarder_info = NewForwarderInfo {
+            call_type: EmergencyMigratingCallType::Migrate,
             ethereum_account_addr: None,
             permit_info: None,
             migrate_info: Some(MigrateInfo {
@@ -267,14 +269,14 @@ impl TransferLogicV2 {
     }
 }
 
-impl LogicProver for TransferLogicV2 {
-    type Witness = TokenTransferWitnessV2;
+impl LogicProver for EmergencyMigratingTransferLogic {
+    type Witness = EmergencyMigratingTokenTransferWitness;
     fn proving_key() -> &'static [u8] {
-        TOKEN_TRANSFER_V2_ELF
+        EMERGENCY_MIGRATING_TOKEN_TRANSFER_ELF
     }
 
     fn verifying_key() -> Digest {
-        *TOKEN_TRANSFER_V2_ID
+        *EMERGENCY_MIGRATING_TOKEN_TRANSFER_ID
     }
 
     fn witness(&self) -> &Self::Witness {

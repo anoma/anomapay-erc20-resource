@@ -1,4 +1,4 @@
-use crate::{MigrateEntryParams, TransferLogicV2};
+use crate::{EmergencyMigratingTransferLogic, MigrateEntryParams};
 use anoma_rm_risc0::{
     Digest, action,
     action_tree::ActionTree,
@@ -52,7 +52,7 @@ pub fn construct_migrate_tx(
     let compliance_unit = compliance_unit::create(&compliance_witness, ProofType::Groth16)?;
 
     // Generate logic proofs
-    let consumed_resource_logic = TransferLogicV2::migrate_resource_logic(
+    let consumed_resource_logic = EmergencyMigratingTransferLogic::migrate_resource_logic(
         consumed_resource,
         action_tree_root,
         consumed_nf_key,
@@ -63,7 +63,7 @@ pub fn construct_migrate_tx(
     );
     let consumed_logic_proof = consumed_resource_logic.prove(ProofType::Groth16)?;
 
-    let created_resource_logic = TransferLogicV2::create_persistent_resource_logic(
+    let created_resource_logic = EmergencyMigratingTransferLogic::create_persistent_resource_logic(
         created_resource,
         action_tree_root,
         &created_discovery_pk,
@@ -103,9 +103,9 @@ fn simple_migrate_test() {
         authority::{AuthoritySigningKey, AuthorityVerifyingKey},
         encryption::random_keypair,
     };
+    use emergency_migrating_transfer_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN;
     use transfer_witness::ValueInfo;
     use transfer_witness::{calculate_label_ref, calculate_persistent_value_ref};
-    use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
 
     // The transaction carries an empty kind table (no precomputed kind
     // points), so `Transaction::verify` needs the global table initialized
@@ -177,7 +177,7 @@ fn simple_migrate_test() {
     // Construct the consumed resource
     let (consumed_nf_key, consumed_nf_cm) = nullifier_key::random_pair();
     let consumed_resource = Resource {
-        logic_ref: TransferLogicV2::verifying_key(),
+        logic_ref: EmergencyMigratingTransferLogic::verifying_key(),
         label_ref: label_ref_v2,
         nk_commitment: consumed_nf_cm,
         quantity: total_quantity,
@@ -200,7 +200,7 @@ fn simple_migrate_test() {
         encryption_pk: created_encryption_pk,
     };
     let created_resource = Resource {
-        logic_ref: TransferLogicV2::verifying_key(),
+        logic_ref: EmergencyMigratingTransferLogic::verifying_key(),
         nk_commitment: created_nf_cm,
         label_ref: label_ref_v2,
         value_ref: calculate_persistent_value_ref(&value_info),
@@ -215,7 +215,10 @@ fn simple_migrate_test() {
     // Generate the authorization signature, now that the action tree root is known.
     let action_tree = ActionTree::new(vec![consumed_nf, created_cm]);
     let action_root = action_tree.root().unwrap();
-    let migrate_auth_sig = migrated_auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_root.as_bytes());
+    let migrate_auth_sig = migrated_auth_sk.sign(
+        EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
+        action_root.as_bytes(),
+    );
 
     // Construct the migration transaction
     let tx_start_timer = std::time::Instant::now();

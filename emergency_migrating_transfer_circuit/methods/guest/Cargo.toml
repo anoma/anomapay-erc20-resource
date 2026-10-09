@@ -1,15 +1,15 @@
 [package]
-description = "v2 RISC Zero guest entry point for the AnomaPay ERC20 transfer resource logic, with migration support."
+description = "RISC Zero guest entry point for the AnomaPay ERC20 transfer resource logic, with emergency migration support."
 edition = "2021"
-name = "token-transfer-guest-v2"
+name = "emergency-migrating-token-transfer-guest"
 version = "2.0.0"
 
 [workspace]
 
 [dependencies]
 # If you want to try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
+emergency_migrating_transfer_witness = { path = "../../../emergency_migrating_transfer_witness" }
 risc0-zkvm = { version = "3.0.3", features = ["std", "unstable"] }
-transfer_witness_v2 = { path = "../../../transfer_witness_v2" }
 
 [patch.crates-io]
 # Placing this patch statement in the workspace Cargo.toml will add RISC Zero SHA-256 accelerator

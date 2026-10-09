@@ -1,9 +1,9 @@
 [package]
 authors.workspace = true
-description = "v2 witness data and resource-logic constraints for the AnomaPay ERC20 transfer resource, adding migration support."
+description = "Witness data and resource-logic constraints for the AnomaPay ERC20 transfer resource, adding emergency migration support."
 edition.workspace = true
 license.workspace = true
-name = "transfer_witness_v2"
+name = "emergency_migrating_transfer_witness"
 readme = "README.md"
 repository.workspace = true
 version.workspace = true

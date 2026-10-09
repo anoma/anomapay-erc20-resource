@@ -6,16 +6,16 @@ use anoma_rm_risc0_gadgets::{
     authority::{AuthoritySigningKey, AuthorityVerifyingKey},
     encryption::{SecretKey, generate_public_key},
 };
+use emergency_migrating_transfer_library::EmergencyMigratingTransferLogic;
 use k256::Scalar;
 use transfer_library::TransferLogic;
-use transfer_library_v2::TransferLogicV2;
 use transfer_witness::{
     ValueInfo, calculate_label_ref, calculate_persistent_value_ref,
     calculate_value_ref_from_ethereum_account_addr,
 };
 
 const FORWARDER_ADDR_V1: [u8; 20] = [0u8; 20];
-const FORWARDER_ADDR_V2: [u8; 20] = [10u8; 20];
+const EMERGENCY_MIGRATING_FORWARDER_ADDR: [u8; 20] = [10u8; 20];
 const UNEXPECTED_FORWARDER_ADDR: [u8; 20] = [20u8; 20];
 const ERC20_TOKEN_ADDR: [u8; 20] = [1u8; 20];
 const ETHEREUM_ACCOUNT_ADDR: [u8; 20] = [2u8; 20];
@@ -31,9 +31,9 @@ const UNEXPECTED_AUTH_SK: [u8; 32] = [77u8; 32];
 const ENCRYPTION_SK: u32 = 8u32;
 const UNEXPECTED_ENCRYPTION_SK: u32 = 88u32;
 
-// Create a sample persistent resource in v2 for testing
-fn create_persistent_resource_v2() -> Resource {
-    let label_ref = calculate_label_ref(&FORWARDER_ADDR_V2, &ERC20_TOKEN_ADDR);
+// Create a sample persistent resource for testing
+fn create_persistent_resource() -> Resource {
+    let label_ref = calculate_label_ref(&EMERGENCY_MIGRATING_FORWARDER_ADDR, &ERC20_TOKEN_ADDR);
     let nk_commitment = NullifierKey::from_bytes(NF_KEY_BYTES).commit();
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
@@ -47,7 +47,7 @@ fn create_persistent_resource_v2() -> Resource {
     let value_ref = calculate_persistent_value_ref(&value_info);
 
     Resource {
-        logic_ref: TransferLogicV2::verifying_key(),
+        logic_ref: EmergencyMigratingTransferLogic::verifying_key(),
         label_ref,
         value_ref,
         quantity: QUANTITY,
@@ -57,14 +57,14 @@ fn create_persistent_resource_v2() -> Resource {
     }
 }
 
-// Create a sample ephemeral resource in v2 for testing
-fn create_ephemeral_resource_v2() -> Resource {
-    let label_ref = calculate_label_ref(&FORWARDER_ADDR_V2, &ERC20_TOKEN_ADDR);
+// Create a sample ephemeral resource for testing
+fn create_ephemeral_resource() -> Resource {
+    let label_ref = calculate_label_ref(&EMERGENCY_MIGRATING_FORWARDER_ADDR, &ERC20_TOKEN_ADDR);
     let value_ref = calculate_value_ref_from_ethereum_account_addr(&ETHEREUM_ACCOUNT_ADDR);
     let nk_commitment = NullifierKey::from_bytes(NF_KEY_BYTES).commit();
 
     Resource {
-        logic_ref: TransferLogicV2::verifying_key(),
+        logic_ref: EmergencyMigratingTransferLogic::verifying_key(),
         nk_commitment,
         label_ref,
         value_ref,
@@ -100,17 +100,17 @@ fn create_persistent_resource_v1() -> Resource {
     }
 }
 
-// Create a valid migrate resource logic in v2 for testing, migrating a single-entry batch.
-fn create_migrate_resource_logic() -> TransferLogicV2 {
+// Create a valid migrate resource logic for testing, migrating a single-entry batch.
+fn create_migrate_resource_logic() -> EmergencyMigratingTransferLogic {
     use anoma_rm_risc0::merkle_path::MerklePath;
-    use transfer_library_v2::MigrateEntryParams;
-    use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
+    use emergency_migrating_transfer_library::MigrateEntryParams;
+    use emergency_migrating_transfer_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN;
 
     // mock a resource to be migrated in v1
     let resource_v1 = create_persistent_resource_v1();
 
-    // create the ephemeral resource in v2 to migrate the resource_v1
-    let self_resource = create_ephemeral_resource_v2();
+    // create the ephemeral resource to migrate the resource_v1
+    let self_resource = create_ephemeral_resource();
 
     // It should be the real root in practice
     let action_tree_root = Digest::default();
@@ -123,13 +123,16 @@ fn create_migrate_resource_logic() -> TransferLogicV2 {
     let encryption_sk = SecretKey::new(Scalar::from(ENCRYPTION_SK));
     let encryption_pk = generate_public_key(encryption_sk.inner());
 
-    let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
+    let auth_sig = auth_sk.sign(
+        EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
+        action_tree_root.as_bytes(),
+    );
 
-    TransferLogicV2::migrate_resource_logic(
+    EmergencyMigratingTransferLogic::migrate_resource_logic(
         self_resource,
         action_tree_root,
         nf_key.clone(),
-        FORWARDER_ADDR_V2.to_vec(),
+        EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
         auth_sig,
         vec![MigrateEntryParams {
@@ -144,15 +147,15 @@ fn create_migrate_resource_logic() -> TransferLogicV2 {
 }
 
 #[test]
-fn test_mint_v2() {
+fn test_mint() {
     use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
 
-    let resource = create_ephemeral_resource_v2();
-    let mut resource_logic = TransferLogicV2::mint_resource_logic_with_permit(
+    let resource = create_ephemeral_resource();
+    let mut resource_logic = EmergencyMigratingTransferLogic::mint_resource_logic_with_permit(
         resource,
         Digest::default(), // dummy action_tree_root
         NullifierKey::from_bytes(NF_KEY_BYTES),
-        FORWARDER_ADDR_V2.to_vec(),
+        EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
         ETHEREUM_ACCOUNT_ADDR.to_vec(),
         PERMIT_NONCE.to_vec(),
@@ -170,14 +173,14 @@ fn test_mint_v2() {
 }
 
 #[test]
-fn test_burn_v2() {
+fn test_burn() {
     use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
 
-    let resource = create_ephemeral_resource_v2();
-    let mut resource_logic = TransferLogicV2::burn_resource_logic(
+    let resource = create_ephemeral_resource();
+    let mut resource_logic = EmergencyMigratingTransferLogic::burn_resource_logic(
         resource,
         Digest::default(), // dummy action_tree_root
-        FORWARDER_ADDR_V2.to_vec(),
+        EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
         ETHEREUM_ACCOUNT_ADDR.to_vec(),
     );
@@ -194,13 +197,13 @@ fn test_burn_v2() {
 }
 
 #[test]
-fn test_transfer_v2() {
+fn test_transfer() {
     use anoma_rm_risc0::{logic_proof, proving_system::ProofType};
     use anoma_rm_risc0_gadgets::encryption::{Ciphertext, random_keypair};
+    use emergency_migrating_transfer_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN;
     use transfer_witness::ResourceWithLabel;
-    use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
 
-    let consumed_resource = create_persistent_resource_v2();
+    let consumed_resource = create_persistent_resource();
 
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
@@ -209,29 +212,33 @@ fn test_transfer_v2() {
 
     let action_tree_root = Digest::default(); // dummy action_tree_root
 
-    let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
-
-    let consumed_resource_logic = TransferLogicV2::consume_persistent_resource_logic(
-        consumed_resource,
-        action_tree_root,
-        NullifierKey::from_bytes(NF_KEY_BYTES),
-        auth_pk,
-        encryption_pk,
-        auth_sig,
+    let auth_sig = auth_sk.sign(
+        EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
+        action_tree_root.as_bytes(),
     );
+
+    let consumed_resource_logic =
+        EmergencyMigratingTransferLogic::consume_persistent_resource_logic(
+            consumed_resource,
+            action_tree_root,
+            NullifierKey::from_bytes(NF_KEY_BYTES),
+            auth_pk,
+            encryption_pk,
+            auth_sig,
+        );
 
     let proof = consumed_resource_logic.prove(ProofType::Succinct).unwrap();
     logic_proof::verify(&proof).unwrap();
 
-    let created_resource = create_persistent_resource_v2();
+    let created_resource = create_persistent_resource();
     let (created_discovery_sk, created_discovery_pk) = random_keypair();
-    let created_resource_logic = TransferLogicV2::create_persistent_resource_logic(
+    let created_resource_logic = EmergencyMigratingTransferLogic::create_persistent_resource_logic(
         created_resource,
         action_tree_root,
         &created_discovery_pk,
         auth_pk,
         encryption_pk,
-        FORWARDER_ADDR_V2.to_vec(),
+        EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
     );
 
@@ -259,7 +266,7 @@ fn test_transfer_v2() {
     let plaintext = encryption_ciphertext.decrypt(&encryption_sk).unwrap();
     let expected_plaintext = bincode::serialize(&ResourceWithLabel {
         resource: created_resource,
-        forwarder: FORWARDER_ADDR_V2.to_vec(),
+        forwarder: EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         erc20_token_addr: ERC20_TOKEN_ADDR.to_vec(),
     })
     .unwrap();
@@ -269,7 +276,7 @@ fn test_transfer_v2() {
     let deserialized: ResourceWithLabel = bincode::deserialize(plaintext.as_bytes()).unwrap();
     assert_eq!(
         deserialized.forwarder,
-        FORWARDER_ADDR_V2.to_vec(),
+        EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         "Forwarder address mismatch"
     );
     assert_eq!(
@@ -280,20 +287,20 @@ fn test_transfer_v2() {
     assert_eq!(deserialized.resource, created_resource, "Resource mismatch");
 }
 
-// Create a migrate resource logic in v2 migrating a batch of `count` V1 resources,
+// Create a migrate resource logic migrating a batch of `count` V1 resources,
 // each from its own forwarder address, sharing one erc20 token address, and each
 // worth QUANTITY / count (so the total matches the trigger resource's quantity).
-fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
+fn create_migrate_resource_logic_batch(count: u8) -> EmergencyMigratingTransferLogic {
     use anoma_rm_risc0::merkle_path::MerklePath;
-    use transfer_library_v2::MigrateEntryParams;
-    use transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2;
+    use emergency_migrating_transfer_library::MigrateEntryParams;
+    use emergency_migrating_transfer_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN;
 
     let action_tree_root = Digest::default();
     let per_entry_quantity = QUANTITY / count as u128;
 
     let self_resource = Resource {
         quantity: per_entry_quantity * count as u128,
-        ..create_ephemeral_resource_v2()
+        ..create_ephemeral_resource()
     };
     let self_nf_key = NullifierKey::from_bytes(NF_KEY_BYTES);
 
@@ -301,7 +308,10 @@ fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
     // single signature over that key.
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
-    let auth_sig = auth_sk.sign(AUTH_SIGNATURE_DOMAIN_V2, action_tree_root.as_bytes());
+    let auth_sig = auth_sk.sign(
+        EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
+        action_tree_root.as_bytes(),
+    );
 
     let entries = (0..count)
         .map(|i| {
@@ -337,11 +347,11 @@ fn create_migrate_resource_logic_batch(count: u8) -> TransferLogicV2 {
         })
         .collect();
 
-    TransferLogicV2::migrate_resource_logic(
+    EmergencyMigratingTransferLogic::migrate_resource_logic(
         self_resource,
         action_tree_root,
         self_nf_key,
-        FORWARDER_ADDR_V2.to_vec(),
+        EMERGENCY_MIGRATING_FORWARDER_ADDR.to_vec(),
         ERC20_TOKEN_ADDR.to_vec(),
         auth_sig,
         entries,
@@ -380,7 +390,7 @@ fn test_negative_migration_with_empty_batch() {
 
     resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -411,7 +421,7 @@ fn test_negative_migration_with_missing_migrate_info() {
     // Remove the migrate_info to simulate missing migration data
     resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info = None;
@@ -427,7 +437,7 @@ fn test_negative_migration_with_wrong_is_ephemeral_in_migrate_info() {
     // Change the is_ephemeral flag to false in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -446,7 +456,7 @@ fn test_negative_migration_with_wrong_auth_pk_in_value_info() {
     // Change the auth_pk in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -467,7 +477,7 @@ fn test_negative_migration_with_wrong_encryption_pk_in_value_info() {
     // Change the encryption_pk in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -488,14 +498,14 @@ fn test_negative_migration_with_wrong_auth_sig() {
     // Change the auth_sig in the migrate_info, using a wrong auth_sk
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
     {
         let wrong_auth_sk = AuthoritySigningKey::from_bytes(&UNEXPECTED_AUTH_SK).unwrap();
         let wrong_auth_sig = wrong_auth_sk.sign(
-            transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2,
+            emergency_migrating_transfer_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
             resource_logic.witness.action_tree_root.as_bytes(),
         );
         migrate_info.auth_sig = wrong_auth_sig;
@@ -506,7 +516,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
     let mut resource_logic = create_migrate_resource_logic();
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -514,7 +524,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
         let wrong_action_tree_root = Digest::from([10u8; 32]);
         let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
         let wrong_auth_sig = auth_sk.sign(
-            transfer_witness_v2::AUTH_SIGNATURE_DOMAIN_V2,
+            emergency_migrating_transfer_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN,
             wrong_action_tree_root.as_bytes(),
         );
         migrate_info.auth_sig = wrong_auth_sig;
@@ -525,7 +535,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
     let mut resource_logic = create_migrate_resource_logic();
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -549,7 +559,7 @@ fn test_negative_migration_with_wrong_quantity() {
     // Change the quantity in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -567,7 +577,7 @@ fn test_negative_migration_with_wrong_nf_key() {
     // Change the nf_key in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -586,7 +596,7 @@ fn test_negative_migration_with_wrong_forwarder_addr_in_migrate_info() {
     // Change the forwarder_addr in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .forwarder_info_v2
+        .new_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
