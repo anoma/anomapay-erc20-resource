@@ -1501,7 +1501,7 @@ version = "3.0.0-rc.3"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
- "emergency_migrating_transfer_witness",
+ "emergency_migrating_transfer_witness 3.0.0-rc.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "k256",
  "lazy_static",
@@ -1512,6 +1512,21 @@ dependencies = [
 [[package]]
 name = "emergency_migrating_transfer_witness"
 version = "3.0.0-rc.3"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "bincode",
+ "serde",
+ "transfer_witness 3.0.0-rc.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "emergency_migrating_transfer_witness"
+version = "3.0.0-rc.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88bd3bc2e03b68a2baea22abe67c34aae7f3349fa40f8d0feda275147ba5f5e0"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
