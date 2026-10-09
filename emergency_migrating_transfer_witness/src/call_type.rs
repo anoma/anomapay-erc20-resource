@@ -4,7 +4,7 @@ use anoma_rm_risc0::error::ArmError;
 
 sol! {
     #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-    enum CallTypeV2 {
+    enum EmergencyMigratingCallType {
         Wrap,
         Unwrap,
         Migrate,
@@ -59,5 +59,11 @@ pub fn encode_migrate_forwarder_input_batch(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok((CallTypeV2::Migrate, token, quantity, migrate_data).abi_encode_params())
+    Ok((
+        EmergencyMigratingCallType::Migrate,
+        token,
+        quantity,
+        migrate_data,
+    )
+        .abi_encode_params())
 }

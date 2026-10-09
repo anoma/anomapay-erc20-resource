@@ -30,8 +30,8 @@ jobs:
         working-directory: transfer_circuit
         run: cargo fmt --all --check
 
-      - name: cargo fmt (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
+      - name: cargo fmt (emergency_migrating_transfer_circuit)
+        working-directory: emergency_migrating_transfer_circuit
         run: cargo fmt --all --check
 
       - name: Install taplo
@@ -58,7 +58,7 @@ jobs:
           workspaces: |
             .
             transfer_circuit
-            transfer_circuit_v2
+            emergency_migrating_transfer_circuit
 
       - name: cargo build (workspace)
         run: cargo build --workspace --all-targets
@@ -78,12 +78,12 @@ jobs:
         env:
           RISC0_DEV_MODE: "1"
 
-      - name: cargo build (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
+      - name: cargo build (emergency_migrating_transfer_circuit)
+        working-directory: emergency_migrating_transfer_circuit
         run: cargo build --all-targets
 
-      - name: cargo test (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
+      - name: cargo test (emergency_migrating_transfer_circuit)
+        working-directory: emergency_migrating_transfer_circuit
         run: cargo test -- --nocapture
         env:
           RISC0_DEV_MODE: "1"
@@ -105,7 +105,7 @@ jobs:
           workspaces: |
             .
             transfer_circuit
-            transfer_circuit_v2
+            emergency_migrating_transfer_circuit
 
       - name: cargo clippy (workspace)
         run: cargo clippy --workspace --all-targets -- -D warnings
@@ -114,6 +114,6 @@ jobs:
         working-directory: transfer_circuit
         run: cargo clippy --all-targets -- -D warnings
 
-      - name: cargo clippy (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
+      - name: cargo clippy (emergency_migrating_transfer_circuit)
+        working-directory: emergency_migrating_transfer_circuit
         run: cargo clippy --all-targets -- -D warnings
