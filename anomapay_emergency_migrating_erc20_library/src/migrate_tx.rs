@@ -5,6 +5,7 @@ use anoma_rm_risc0::{
     compliance, compliance_unit,
     delta_proof::DeltaWitness,
     error::ArmError,
+    kind_table::KindTable,
     logic_proof::LogicProver,
     nullifier_key::NullifierKey,
     proving_system::ProofType,
@@ -47,7 +48,7 @@ pub fn construct_migrate_tx(
         vec![consumed_resource_witness],
         vec![created_resource],
         latest_cm_tree_root,
-        vec![],
+        &KindTable::empty(),
     );
     let compliance_unit = compliance_unit::create(&compliance_witness, ProofType::Groth16)?;
 
@@ -92,7 +93,7 @@ pub fn construct_migrate_tx(
 fn simple_migrate_test() {
     use anoma_rm_risc0::{
         compliance::INITIAL_ROOT,
-        constants::{init_kind_table_from_file, kind_table_hash},
+        constants::{init_kind_table_from_file, kind_table_root},
         merkle_path::MerklePath,
         nullifier_key::{self, NullifierKey},
         proving_system::JournalEncoding,
@@ -239,6 +240,6 @@ fn simple_migrate_test() {
     println!("Tx build duration time: {:?}", tx_start_timer.elapsed());
 
     // Verify the transaction
-    let kind_table_commitment = *kind_table_hash().unwrap();
+    let kind_table_commitment = *kind_table_root().unwrap();
     transaction::verify(&tx, kind_table_commitment, JournalEncoding::Risc0Serde).unwrap();
 }
