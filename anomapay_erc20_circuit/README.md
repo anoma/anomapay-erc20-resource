@@ -14,7 +14,7 @@ which reproduces:
 
 ```bash
 ELFs ready at:
-ImageID: 004d51ca4ae38a47cd340543a8b277f48702b675a0508fe13e69d3576702a9c7
+ImageID: 51c2403f4e1de40c3c3ecef69385f8772ee99b4a610e88f1ad2b1b85b481a7f2
 anomapay_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-erc20-circuit-guest.bin
 ```
 

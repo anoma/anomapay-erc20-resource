@@ -306,7 +306,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_emergency_migrating_erc20_library"
-version = "3.0.0-rc.3"
+version = "2.0.0-rc.1"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -320,7 +320,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_emergency_migrating_erc20_witness"
-version = "3.0.0-rc.3"
+version = "2.0.0-rc.1"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -333,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_erc20_library"
-version = "3.0.0-rc.3"
+version = "2.0.0-rc.1"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -346,7 +346,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_erc20_witness"
-version = "3.0.0-rc.3"
+version = "2.0.0-rc.1"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",

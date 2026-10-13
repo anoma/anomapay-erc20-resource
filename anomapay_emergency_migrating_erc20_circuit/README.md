@@ -9,7 +9,7 @@ which reproduces the `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID` committed i
 
 ```bash
 ELFs ready at:
-ImageID: f6b85d05de6412e39bd282726ff79cd259d8c49449b62bad745f79d6c08a0ffa
+ImageID: 47ab0d901b35909c87c6c08463393205ae42f11ca4af3dd48416606bb02fbcc2
 anomapay_emergency_migrating_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-emergency-migrating-erc20-circuit-guest.bin
 ```
 
