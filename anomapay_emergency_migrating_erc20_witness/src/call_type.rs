@@ -1,0 +1,69 @@
+use alloy_primitives::{Address, B256};
+use alloy_sol_types::{SolValue, sol};
+use anoma_rm_risc0::error::ArmError;
+
+sol! {
+    #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+    enum EmergencyMigratingCallType {
+        Wrap,
+        Unwrap,
+        Migrate,
+    }
+
+
+    /// @notice One resource of an emergency migration batch, in the order that the trigger's logic encodes it.
+    /// @param nullifier The nullifier of the resource.
+    /// @param commitmentTreeRoot The commitment tree root that the resource is proven against.
+    /// @param vulnerableLogicRef The logic reference of the resource.
+    /// @param forwarder The forwarder address in the resource label.
+    struct MigrateEntry {
+        bytes32 nullifier;
+        bytes32 commitmentTreeRoot;
+        bytes32 vulnerableLogicRef;
+        address forwarder;
+    }
+}
+
+/// One entry of a migration batch's forwarder calldata, in raw byte form.
+pub struct MigrateForwarderEntry {
+    pub nullifier: Vec<u8>,
+    pub root: Vec<u8>,
+    pub logic_ref: Vec<u8>,
+    pub forwarder_addr: Vec<u8>,
+}
+
+pub fn encode_migrate_forwarder_input_batch(
+    erc20_token_addr: &[u8],
+    quantity: u128,
+    entries: &[MigrateForwarderEntry],
+) -> Result<Vec<u8>, ArmError> {
+    let token: Address = erc20_token_addr
+        .try_into()
+        .map_err(|_| ArmError::ProveFailed("Invalid address bytes".to_string()))?;
+
+    let migrate_data = entries
+        .iter()
+        .map(|entry| -> Result<MigrateEntry, ArmError> {
+            let legacy_forwarder_addr: Address = entry
+                .forwarder_addr
+                .as_slice()
+                .try_into()
+                .map_err(|_| ArmError::ProveFailed("Invalid address bytes".to_string()))?;
+
+            Ok(MigrateEntry {
+                nullifier: B256::from_slice(&entry.nullifier),
+                commitmentTreeRoot: B256::from_slice(&entry.root),
+                vulnerableLogicRef: B256::from_slice(&entry.logic_ref),
+                forwarder: legacy_forwarder_addr,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok((
+        EmergencyMigratingCallType::Migrate,
+        token,
+        quantity,
+        migrate_data,
+    )
+        .abi_encode_params())
+}

@@ -1,0 +1,25 @@
+[package]
+authors.workspace = true
+description = "Host-side proving API for the AnomaPay ERC20 transfer resource, with the embedded RISC Zero guest ELF and ImageID."
+edition.workspace = true
+license.workspace = true
+name = "anomapay_erc20_library"
+readme = "README.md"
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+anoma-rm-risc0 = { workspace = true, features = ["transaction", "prove"] }
+anoma-rm-risc0-gadgets = { workspace = true }
+anomapay_erc20_witness = { workspace = true }
+hex = { workspace = true }
+k256 = { workspace = true, features = [
+  "arithmetic",
+  "serde",
+  "expose-field",
+  "std",
+  "ecdsa",
+  "hash2curve",
+], default-features = false }
+lazy_static = { workspace = true }
+serde = { workspace = true, features = ["derive"] }

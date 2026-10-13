@@ -1,15 +1,15 @@
 include = [
     "Cargo.toml",
-    "transfer_witness/Cargo.toml",
-    "emergency_migrating_transfer_witness/Cargo.toml",
-    "transfer_library/Cargo.toml",
-    "emergency_migrating_transfer_library/Cargo.toml",
-    "transfer_circuit/Cargo.toml",
-    "transfer_circuit/methods/Cargo.toml",
-    "transfer_circuit/methods/guest/Cargo.toml",
-    "emergency_migrating_transfer_circuit/Cargo.toml",
-    "emergency_migrating_transfer_circuit/methods/Cargo.toml",
-    "emergency_migrating_transfer_circuit/methods/guest/Cargo.toml"
+    "anomapay_erc20_witness/Cargo.toml",
+    "anomapay_emergency_migrating_erc20_witness/Cargo.toml",
+    "anomapay_erc20_library/Cargo.toml",
+    "anomapay_emergency_migrating_erc20_library/Cargo.toml",
+    "anomapay_erc20_circuit/Cargo.toml",
+    "anomapay_erc20_circuit/methods/Cargo.toml",
+    "anomapay_erc20_circuit/methods/guest/Cargo.toml",
+    "anomapay_emergency_migrating_erc20_circuit/Cargo.toml",
+    "anomapay_emergency_migrating_erc20_circuit/methods/Cargo.toml",
+    "anomapay_emergency_migrating_erc20_circuit/methods/guest/Cargo.toml"
 ]
 
 [formatting]
