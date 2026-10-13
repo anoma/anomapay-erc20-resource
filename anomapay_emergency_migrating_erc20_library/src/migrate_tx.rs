@@ -240,6 +240,6 @@ fn simple_migrate_test() {
     println!("Tx build duration time: {:?}", tx_start_timer.elapsed());
 
     // Verify the transaction
-    let kind_table_commitment = *kind_table_root().unwrap();
+    let kind_table_commitment = kind_table_root().unwrap();
     transaction::verify(&tx, kind_table_commitment, JournalEncoding::Risc0Serde).unwrap();
 }
