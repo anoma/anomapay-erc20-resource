@@ -26,12 +26,12 @@ jobs:
       - name: cargo fmt (workspace)
         run: cargo fmt --all --check
 
-      - name: cargo fmt (transfer_circuit)
-        working-directory: transfer_circuit
+      - name: cargo fmt (anomapay_erc20_circuit)
+        working-directory: anomapay_erc20_circuit
         run: cargo fmt --all --check
 
-      - name: cargo fmt (emergency_migrating_transfer_circuit)
-        working-directory: emergency_migrating_transfer_circuit
+      - name: cargo fmt (anomapay_emergency_migrating_erc20_circuit)
+        working-directory: anomapay_emergency_migrating_erc20_circuit
         run: cargo fmt --all --check
 
       - name: Install taplo
@@ -57,8 +57,8 @@ jobs:
         with:
           workspaces: |
             .
-            transfer_circuit
-            emergency_migrating_transfer_circuit
+            anomapay_erc20_circuit
+            anomapay_emergency_migrating_erc20_circuit
 
       - name: cargo build (workspace)
         run: cargo build --workspace --all-targets
@@ -68,22 +68,22 @@ jobs:
         env:
           RISC0_DEV_MODE: "1"
 
-      - name: cargo build (transfer_circuit)
-        working-directory: transfer_circuit
+      - name: cargo build (anomapay_erc20_circuit)
+        working-directory: anomapay_erc20_circuit
         run: cargo build --all-targets
 
-      - name: cargo test (transfer_circuit)
-        working-directory: transfer_circuit
+      - name: cargo test (anomapay_erc20_circuit)
+        working-directory: anomapay_erc20_circuit
         run: cargo test -- --nocapture
         env:
           RISC0_DEV_MODE: "1"
 
-      - name: cargo build (emergency_migrating_transfer_circuit)
-        working-directory: emergency_migrating_transfer_circuit
+      - name: cargo build (anomapay_emergency_migrating_erc20_circuit)
+        working-directory: anomapay_emergency_migrating_erc20_circuit
         run: cargo build --all-targets
 
-      - name: cargo test (emergency_migrating_transfer_circuit)
-        working-directory: emergency_migrating_transfer_circuit
+      - name: cargo test (anomapay_emergency_migrating_erc20_circuit)
+        working-directory: anomapay_emergency_migrating_erc20_circuit
         run: cargo test -- --nocapture
         env:
           RISC0_DEV_MODE: "1"
@@ -104,16 +104,16 @@ jobs:
         with:
           workspaces: |
             .
-            transfer_circuit
-            emergency_migrating_transfer_circuit
+            anomapay_erc20_circuit
+            anomapay_emergency_migrating_erc20_circuit
 
       - name: cargo clippy (workspace)
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: cargo clippy (transfer_circuit)
-        working-directory: transfer_circuit
+      - name: cargo clippy (anomapay_erc20_circuit)
+        working-directory: anomapay_erc20_circuit
         run: cargo clippy --all-targets -- -D warnings
 
-      - name: cargo clippy (emergency_migrating_transfer_circuit)
-        working-directory: emergency_migrating_transfer_circuit
+      - name: cargo clippy (anomapay_emergency_migrating_erc20_circuit)
+        working-directory: anomapay_emergency_migrating_erc20_circuit
         run: cargo clippy --all-targets -- -D warnings

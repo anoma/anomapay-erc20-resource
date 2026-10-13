@@ -10,11 +10,11 @@ extracted from the AnomaPay backend into a standalone workspace so the proving
 artifacts (guest ELFs, `ImageID`s, and the Rust APIs around them) can be
 versioned and reused independently of the backend services that consume them.
 
-There are two generations of the resource:
+There are two variants of the resource:
 
-- **v1** — the original token-transfer resource (wrap / unwrap / transfer).
-- **emergency-migrating** — adds **migration** support (migrating a v1 resource) on top of
-  the v1 capabilities.
+- **base** — the original token-transfer resource (wrap / unwrap / transfer).
+- **emergency-migrating** — adds **migration** support (migrating a legacy resource) on top of
+  the base capabilities.
 
 ## Layout
 
@@ -25,25 +25,25 @@ not share the host workspace's lockfile or profile.
 
 ```
 .
-├── transfer_witness/                        # v1 witness data + resource-logic constraints
-├── emergency_migrating_transfer_witness/    # emergency-migrating witness data (depends on v1)
-├── transfer_library/                        # v1 host API: TransferLogic, guest ELF + ImageID
-├── emergency_migrating_transfer_library/    # emergency-migrating host API + migration tx builder
-├── transfer_circuit/                        # v1 RISC Zero guest program  (excluded workspace)
-└── emergency_migrating_transfer_circuit/    # emergency-migrating RISC Zero guest program  (excluded workspace)
+├── anomapay_erc20_witness/                      # base witness data + resource-logic constraints
+├── anomapay_emergency_migrating_erc20_witness/  # emergency-migrating witness data (depends on base)
+├── anomapay_erc20_library/                      # base host API: TransferLogic, guest ELF + ImageID
+├── anomapay_emergency_migrating_erc20_library/  # emergency-migrating host API + migration tx builder
+├── anomapay_erc20_circuit/                      # base RISC Zero guest program  (excluded workspace)
+└── anomapay_emergency_migrating_erc20_circuit/  # emergency-migrating RISC Zero guest program  (excluded workspace)
 ```
 
 ### Dependency graph
 
 ```
-transfer_witness ──────────────────────────────────────────────────────► transfer_library ───► transfer_circuit
+anomapay_erc20_witness ──────────────────────────────────────────────────────► anomapay_erc20_library ───► anomapay_erc20_circuit
         ▲                                                                         ▲                     │
         │                                                                         │                     │ (path deps,
-        └── emergency_migrating_transfer_witness ──► emergency_migrating_transfer_library ──► emergency_migrating_transfer_circuit
+        └── anomapay_emergency_migrating_erc20_witness ──► anomapay_emergency_migrating_erc20_library ──► anomapay_emergency_migrating_erc20_circuit
                                                                                               (guest embeds the library ELF)
 ```
 
-- `transfer_witness` is the leaf; everything else builds on it.
+- `anomapay_erc20_witness` is the leaf; everything else builds on it.
 - The `*_library` crates **embed the prebuilt guest ELF** (`include_bytes!`) and
   expose the matching `ImageID`, so a host can verify proofs without rebuilding
   the guest.
@@ -52,7 +52,7 @@ transfer_witness ─────────────────────
 
 ## Crates
 
-### `transfer_witness`
+### `anomapay_erc20_witness`
 Defines `TokenTransferWitness`: the full set of inputs needed to prove the
 resource logic of a single consumed or created resource (the resource itself,
 nullifier key, authorization signature, encryption info, forwarder/permit data,
@@ -61,28 +61,28 @@ that the guest executes, plus the Solidity-ABI (`alloy-sol-types`) encoding for
 the EVM forwarder `Wrap`/`Unwrap` calldata. Authorization domain:
 `TokenTransferAuthorization`.
 
-### `emergency_migrating_transfer_witness`
-`EmergencyMigratingTokenTransferWitness` — the emergency-migrating witness, reusing the shared v1 building blocks
+### `anomapay_emergency_migrating_erc20_witness`
+`EmergencyMigratingTokenTransferWitness` — the emergency-migrating witness, reusing the shared base building blocks
 (`EncryptionInfo`, `LabelInfo`, `ValueInfo`, `PermitInfo`, …) and adding
-`NewForwarderInfo` with `MigrateInfo` to support migrating a v1 resource.
-Authorization domain: `TokenTransferAuthorizationV2`.
+`NewForwarderInfo` with `MigrateInfo` to support migrating a legacy resource.
+Authorization domain: `TokenTransferAuthorizationEmergencyMigrating`.
 
-### `transfer_library`
-Host-side API for v1 proving. `TransferLogic` wraps a witness and constructs
+### `anomapay_erc20_library`
+Host-side API for base proving. `TransferLogic` wraps a witness and constructs
 resource-logic proofs. Exposes:
-- `TOKEN_TRANSFER_ELF` — the embedded guest binary
-  (`elf/token-transfer-guest.bin`).
-- `TOKEN_TRANSFER_ID` — the guest `ImageID` (a `Digest`) used for verification
+- `ANOMAPAY_ERC20_CIRCUIT_ELF` — the embedded guest binary
+  (`elf/anomapay-erc20-circuit-guest.bin`).
+- `ANOMAPAY_ERC20_CIRCUIT_ID` — the guest `ImageID` (a `Digest`) used for verification
   on- and off-chain.
 
-### `emergency_migrating_transfer_library`
+### `anomapay_emergency_migrating_erc20_library`
 Emergency-migrating host-side API. `EmergencyMigratingTransferLogic` plus `migrate_tx::construct_migrate_tx`,
 which assembles a complete ARM `Transaction` (compliance units, logic proofs,
-delta proof) that migrates a v1 resource. Exposes `EMERGENCY_MIGRATING_TOKEN_TRANSFER_ELF`
-and `EMERGENCY_MIGRATING_TOKEN_TRANSFER_ID` (`elf/emergency-migrating-token-transfer-guest.bin`).
+delta proof) that migrates a legacy resource. Exposes `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ELF`
+and `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID` (`elf/anomapay-emergency-migrating-erc20-circuit-guest.bin`).
 
-### `transfer_circuit` / `emergency_migrating_transfer_circuit`
-The RISC Zero guest programs (`token-transfer` / `emergency-migrating-token-transfer`). Each
+### `anomapay_erc20_circuit` / `anomapay_emergency_migrating_erc20_circuit`
+The RISC Zero guest programs (`anomapay-erc20-circuit` / `anomapay-emergency-migrating-erc20-circuit`). Each
 `methods/guest` main simply reads a witness, runs `witness.constrain()`, and
 commits the resulting `LogicInstance`:
 
@@ -98,20 +98,25 @@ build the ELF and `ImageID` with `cargo risczero build`.
 
 ## The guest ELF / `ImageID` model
 
-`TOKEN_TRANSFER_ID` (and `EMERGENCY_MIGRATING_TOKEN_TRANSFER_ID`) is the `ImageID` of a **specific
+`ANOMAPAY_ERC20_CIRCUIT_ID` (and `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID`) is the `ImageID` of a **specific
 committed build** of the guest ELF — not necessarily of a fresh
 `cargo risczero build` at HEAD. The `ImageID` is a digest over the entire
-compiled guest, so it changes whenever *any* transitive input changes
-(`transfer_library`, the ARM libraries, the toolchain), even if the circuit
-logic is byte-for-byte identical.
+compiled guest, so it changes whenever *any* transitive input changes — the
+witness crate the guest actually links against (`anomapay_erc20_witness`, or
+for the emergency-migrating guest, `anomapay_emergency_migrating_erc20_witness`
+plus `anomapay_erc20_witness`), the ARM libraries (`anoma-rm-risc0`,
+`anoma-rm-risc0-gadgets`), or the toolchain — even if the circuit logic is
+byte-for-byte identical. `anomapay_erc20_library` is **not** a guest input: it
+is host-only and only embeds the already-built ELF, so changes to it never
+re-link the guest or affect its `ImageID`.
 
-Because `TOKEN_TRANSFER_ID` is consumed on-chain (verifier / protocol-adapter
+Because `ANOMAPAY_ERC20_CIRCUIT_ID` is consumed on-chain (verifier / protocol-adapter
 contracts) and off-chain, it is rotated **only when the proof semantics
 change** — not on incidental dependency or toolchain bumps. When you do need to
 rotate it, rebuild the guest, replace the committed `elf/*.bin`, update the
 `ImageID` constant in the library crate, and coordinate the corresponding
 contract redeployment. Full details are in
-[`transfer_circuit/README.md`](transfer_circuit/README.md).
+[`anomapay_erc20_circuit/README.md`](anomapay_erc20_circuit/README.md).
 
 ## Building and testing
 
@@ -127,8 +132,8 @@ cargo test  --workspace
 # Each circuit is a separate workspace — build/test from its own directory.
 # RISC0_DEV_MODE=1 skips real proving so tests run fast (dev/CI only — it does
 # NOT produce verifiable proofs).
-cd transfer_circuit                        && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
-cd emergency_migrating_transfer_circuit    && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
+cd anomapay_erc20_circuit                      && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
+cd anomapay_emergency_migrating_erc20_circuit  && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
 ```
 
 > The dev profile sets `opt-level = 3` for the whole workspace: running an
@@ -162,7 +167,7 @@ Our software undergoes regular audits:
 
 ## Versioning
 
-The workspace crates (`transfer_witness`, `emergency_migrating_transfer_witness`, `transfer_library`, `emergency_migrating_transfer_library`) share the
+The workspace crates (`anomapay_erc20_witness`, `anomapay_emergency_migrating_erc20_witness`, `anomapay_erc20_library`, `anomapay_emergency_migrating_erc20_library`) share the
 version in `[workspace.package]` (currently `2.0.0`). The circuit crates are
 versioned independently (currently `2.0.0`).
 
