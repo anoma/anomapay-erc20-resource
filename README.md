@@ -101,9 +101,14 @@ build the ELF and `ImageID` with `cargo risczero build`.
 `ANOMAPAY_ERC20_CIRCUIT_ID` (and `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID`) is the `ImageID` of a **specific
 committed build** of the guest ELF — not necessarily of a fresh
 `cargo risczero build` at HEAD. The `ImageID` is a digest over the entire
-compiled guest, so it changes whenever *any* transitive input changes
-(`anomapay_erc20_library`, the ARM libraries, the toolchain), even if the circuit
-logic is byte-for-byte identical.
+compiled guest, so it changes whenever *any* transitive input changes — the
+witness crate the guest actually links against (`anomapay_erc20_witness`, or
+for the emergency-migrating guest, `anomapay_emergency_migrating_erc20_witness`
+plus `anomapay_erc20_witness`), the ARM libraries (`anoma-rm-risc0`,
+`anoma-rm-risc0-gadgets`), or the toolchain — even if the circuit logic is
+byte-for-byte identical. `anomapay_erc20_library` is **not** a guest input: it
+is host-only and only embeds the already-built ELF, so changes to it never
+re-link the guest or affect its `ImageID`.
 
 Because `ANOMAPAY_ERC20_CIRCUIT_ID` is consumed on-chain (verifier / protocol-adapter
 contracts) and off-chain, it is rotated **only when the proof semantics

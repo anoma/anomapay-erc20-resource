@@ -29,11 +29,11 @@ Running `cargo risczero build` against a later commit may produce an `ImageID` t
 The `ImageID` is a digest over the entire compiled guest binary, which transitively pins:
 
 - the circuit source in this crate (`anomapay_erc20_circuit`),
-- `anomapay_erc20_library` (the resource-logic definitions shared with the host/backend),
-- the ARM libraries (`anoma_rm_risc0`, `anoma_rm_risc0_gadgets`, `anomapay_erc20_witness`, …),
+- `anomapay_erc20_witness` (the resource-logic/constraint code the guest actually links against — this is a guest dependency; `anomapay_erc20_library` is host-only and is **not** compiled into the guest),
+- the ARM libraries (`anoma_rm_risc0`, `anoma_rm_risc0_gadgets`),
 - the toolchain and any other transitive dependency.
 
-Because `anomapay_erc20_library` is shared by both the guest circuit and the host/backend, *any* change to it — including a version bump that does not touch resource-logic behavior — re-links the guest and produces a new `ImageID`. The same is true for ARM library upgrades. The circuit's own source code can be byte-for-byte identical and the `ImageID` will still change.
+*Any* change to `anomapay_erc20_witness` — including a version bump that does not touch resource-logic behavior — re-links the guest and produces a new `ImageID`. The same is true for ARM library upgrades. The circuit's own source code can be byte-for-byte identical and the `ImageID` will still change.
 
 ### Why we do not bump `ANOMAPAY_ERC20_CIRCUIT_ID` on every rebuild
 
