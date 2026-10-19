@@ -1,0 +1,16 @@
+[package]
+authors.workspace = true
+description = "Witness data and resource-logic constraints for the AnomaPay link resource."
+edition.workspace = true
+license.workspace = true
+name = "anomapay_link_witness"
+readme = "README.md"
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+anoma-rm-risc0 = { workspace = true, default-features = false }
+serde = { workspace = true }
+
+[dev-dependencies]
+anoma-rm-risc0 = { workspace = true, default-features = false, features = ["compliance_circuit"] }
