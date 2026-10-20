@@ -2,10 +2,12 @@
 //! so a change to nonce derivation or to the order of the action tree leaves fails here.
 
 use super::*;
+use alloy_sol_types::{SolType, sol_data::Uint};
 use anoma_rm_risc0::{
     action_tree::ActionTree,
     compliance::{self, ComplianceWitness, INITIAL_ROOT},
     resource::{ResourceWitness, ResourceWitnessConsumed},
+    utils::words_to_bytes,
 };
 
 fn digest(byte: u8) -> Digest {
@@ -24,6 +26,8 @@ fn terms(nonce: u8) -> Terms {
         recipient_value_ref: digest(40),
         recipient_nk_commitment: recipient_nk(),
         minimum: 7,
+        deadline: 1_900_000_000,
+        time_forwarder: [0x71; 20],
         nonce: [nonce; 32],
     }
 }
@@ -158,6 +162,7 @@ fn fill_at_link_position_passes() {
     assert_eq!(instance.tag, fill.nullifiers[0]);
     assert!(instance.is_consumed);
     assert_eq!(instance.root, fill.tree.root().unwrap());
+    assert!(instance.app_data.external_payload.is_empty());
 }
 
 #[test]
@@ -168,6 +173,40 @@ fn created_link_passes() {
         ..LinkWitness::default()
     };
     assert!(witness.constrain().is_ok());
+}
+
+/// The created link makes exactly one call: `BlockTimeForwarder` with the deadline, expecting
+/// `TimeComparison.GT`. Decoded with the ABI types, not with the encoder under test.
+#[test]
+fn created_link_calls_the_deadline_check() {
+    let instance = LinkWitness {
+        resource: link(&terms(11)),
+        terms: terms(11),
+        ..LinkWitness::default()
+    }
+    .constrain()
+    .unwrap();
+    let [blob] = instance.app_data.external_payload.as_slice() else {
+        panic!("a created link makes one call");
+    };
+    let call = ForwarderCalldata::decode(words_to_bytes(&blob.blob)).unwrap();
+    assert_eq!(call.untrustedForwarder.as_slice(), &[0x71; 20]);
+    assert_eq!(Uint::<48>::abi_decode(&call.input).unwrap(), 1_900_000_000);
+    assert_eq!(Uint::<8>::abi_decode(&call.output).unwrap(), DEADLINE_AHEAD);
+}
+
+#[test]
+fn deadline_past_uint48_rejected() {
+    let late = Terms {
+        deadline: 1 << 48,
+        ..terms(11)
+    };
+    let witness = LinkWitness {
+        resource: link(&late),
+        terms: late,
+        ..LinkWitness::default()
+    };
+    rejected(&witness, "Link deadline does not fit in uint48");
 }
 
 #[test]
@@ -208,13 +247,26 @@ fn zero_minimum_rejected() {
     rejected(&fill.fill(0, 0, free), "Link minimum is zero");
 }
 
+/// The label binds every field, the deadline and its forwarder included.
 #[test]
 fn other_terms_rejected() {
     let fill = action(vec![link(&terms(11)), wrap(7)], vec![output(7)]);
-    rejected(
-        &fill.fill(0, 0, terms(12)),
-        "Link label does not open to the terms",
-    );
+    for other in [
+        terms(12),
+        Terms {
+            deadline: 2_000_000_000,
+            ..terms(11)
+        },
+        Terms {
+            time_forwarder: [0x72; 20],
+            ..terms(11)
+        },
+    ] {
+        rejected(
+            &fill.fill(0, 0, other),
+            "Link label does not open to the terms",
+        );
+    }
 }
 
 /// An output to another recipient does not pay.

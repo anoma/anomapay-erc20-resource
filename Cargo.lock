@@ -340,7 +340,9 @@ dependencies = [
 name = "anomapay_link_witness"
 version = "2.0.0-rc.3"
 dependencies = [
+ "alloy-sol-types",
  "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
  "serde",
 ]
 

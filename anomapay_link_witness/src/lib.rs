@@ -14,6 +14,11 @@
 //! action can carry it. Distinct links sit at distinct leaves, so they need distinct outputs.
 //! This holds for any order of the consumed and created resources in the action's list.
 //!
+//! A link expires at the deadline in its terms. When a link is created, its logic emits one
+//! forwarder call to a `BlockTimeForwarder` and expects the answer that the deadline is still
+//! ahead. The protocol adapter reverts when a call's output differs from the expected one, so
+//! from the deadline on, every transaction with the user's action reverts.
+//!
 //! A link is identified by its kind, not by the resource the user created. Consuming an
 //! ephemeral resource needs no membership proof, so a filler can discharge the link with any
 //! resource of its kind and any nullifier key. Balance ties the two: each created link forces
@@ -23,12 +28,13 @@ pub use anoma_rm_risc0::resource_logic::LogicCircuit;
 use anoma_rm_risc0::{
     Digest,
     error::ArmError,
-    logic_instance::{AppData, LogicInstance},
+    logic_instance::{AppData, ExpirableBlob, LogicInstance},
     merkle_path::MerklePath,
     nullifier_key::{NullifierKey, NullifierKeyCommitment},
     resource::Resource,
-    utils::hash_bytes,
+    utils::{bytes_to_words, hash_bytes},
 };
+use anoma_rm_risc0_gadgets::evm::ForwarderCalldata;
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
@@ -36,6 +42,9 @@ mod tests;
 
 /// Domain separator of the label hash.
 pub const LABEL_DOMAIN: &[u8] = b"AnomaPayLinkTermsV1";
+
+/// `TimeComparison.GT`, the answer of `BlockTimeForwarder` while the deadline is ahead.
+pub const DEADLINE_AHEAD: u8 = 2;
 
 /// What a link commits to in its label.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -50,6 +59,10 @@ pub struct Terms {
     pub recipient_nk_commitment: NullifierKeyCommitment,
     /// Least quantity the output must have.
     pub minimum: u128,
+    /// Unix time from which the order can no longer be filled. It must fit in `uint48`.
+    pub deadline: u64,
+    /// Address of the `BlockTimeForwarder` that checks the deadline.
+    pub time_forwarder: [u8; 20],
     /// Keeps the label of one order apart from another's with equal terms.
     pub nonce: [u8; 32],
 }
@@ -66,10 +79,29 @@ impl Terms {
                 self.recipient_value_ref.as_bytes(),
                 self.recipient_nk_commitment.as_bytes(),
                 &self.minimum.to_be_bytes(),
+                &self.deadline.to_be_bytes(),
+                &self.time_forwarder,
                 &self.nonce,
             ]
             .concat(),
         )
+    }
+
+    /// The forwarder call that keeps the order open until its deadline: `BlockTimeForwarder`
+    /// decodes `abi.encode(uint48 deadline)` and must answer `abi.encode(TimeComparison.GT)`,
+    /// which holds while `block.timestamp < deadline`.
+    pub fn deadline_call(&self) -> ExpirableBlob {
+        let mut input = [0u8; 32];
+        input[24..].copy_from_slice(&self.deadline.to_be_bytes());
+        let mut output = [0u8; 32];
+        output[31] = DEADLINE_AHEAD;
+        let call =
+            ForwarderCalldata::from_bytes(&self.time_forwarder, input.to_vec(), output.to_vec());
+        ExpirableBlob {
+            blob: bytes_to_words(&call.encode()),
+            // Deleted immediately: the blob is only needed to make the call.
+            deletion_criterion: 0,
+        }
     }
 
     /// Checks that `output` pays the terms. Consuming a persistent token takes a signature by
@@ -143,7 +175,13 @@ impl LogicCircuit for LinkWitness {
         if self.terms.minimum == 0 {
             return Err(failed("Link minimum is zero"));
         }
+        // `BlockTimeForwarder` would revert on a wider deadline, and the order could never be
+        // filled.
+        if self.terms.deadline >= 1 << 48 {
+            return Err(failed("Link deadline does not fit in uint48"));
+        }
 
+        let mut app_data = AppData::default();
         if self.is_consumed {
             let fill = self.fill.as_ref().ok_or(ArmError::MissingField("Fill"))?;
             if fill.link_path.root(&tag) != self.action_tree_root {
@@ -157,13 +195,17 @@ impl LogicCircuit for LinkWitness {
                 return Err(failed("Link output is not created at the link's position"));
             }
             self.terms.check_pays(&fill.output)?;
+        } else {
+            // The created link sits in the user's action, so every transaction with that
+            // action makes the call.
+            app_data.external_payload.push(self.terms.deadline_call());
         }
 
         Ok(LogicInstance {
             tag,
             is_consumed: self.is_consumed,
             root: self.action_tree_root,
-            app_data: AppData::default(),
+            app_data,
         })
     }
 }
