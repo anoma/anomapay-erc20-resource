@@ -17,13 +17,22 @@ mirrors `TransferLogic`'s constructors —
 `mint_resource_logic_with_permit`, `burn_resource_logic` — and adds:
 
 - **`migrate_resource_logic`** — builds the consumed-side logic for a migration:
-  the emergency-migrating (ephemeral) resource being consumed plus the `MigrateInfo` describing
-  the legacy resource being migrated (its resource, nullifier key, Merkle path, auth
-  signature/keys, and the legacy forwarder address).
+  the emergency-migrating (ephemeral) trigger resource being consumed plus the
+  `MigrateInfo` describing the **batch** of legacy resources being migrated — one
+  `MigrateEntryParams` per resource (its resource, nullifier key, Merkle path, auth
+  and encryption keys, and the legacy forwarder address, which may differ per entry)
+  and a single authorization signature over the `auth_pk` they all share.
+
+### `EmergencyMigratingTransferLogic::with_ordering`
+Behaves exactly as `TransferLogic::with_ordering` in the base crate: it sets the
+`OrderingInfo` on the witness' `EmergencyMigratingForwarderInfo`, and returns
+`Result`, rejecting a non-ephemeral resource or missing forwarder info because
+only an ephemeral resource emits the forwarder call the tags ride on.
 
 ### `migrate_tx::construct_migrate_tx` ([`src/migrate_tx.rs`](src/migrate_tx.rs))
-Assembles a complete, balanced ARM `Transaction` that migrates a legacy resource.
-Given the consumed, migrated, and created resource parameters it:
+Assembles a complete, balanced ARM `Transaction` that migrates a batch of legacy
+resources. Given the consumed (trigger), migrated, and created resource parameters
+it:
 
 1. builds the action tree from the consumed nullifier and created commitment,
 2. creates the compliance unit (Groth16),
@@ -37,7 +46,7 @@ returning a verifiable `Transaction`.
 - `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ELF` — the guest binary, embedded via `include_bytes!`
   from [`elf/anomapay-emergency-migrating-erc20-circuit-guest.bin`](elf/anomapay-emergency-migrating-erc20-circuit-guest.bin).
 - `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID` — the guest `ImageID` (a `Digest`,
-  `47ab0d901b35909c87c6c08463393205ae42f11ca4af3dd48416606bb02fbcc2`) used to
+  `2eec14ca392e3acad25bfaa30c4c814449933c6196d7425af216be9a6d06e706`) used to
   verify proofs on- and off-chain.
 
 > [!IMPORTANT]

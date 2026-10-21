@@ -5,7 +5,7 @@ use anoma_rm_risc0::{
     compliance, compliance_unit,
     delta_proof::DeltaWitness,
     error::ArmError,
-    kind_table::KindTable,
+    kind_tree::KindTree,
     logic_proof::LogicProver,
     nullifier_key::NullifierKey,
     proving_system::ProofType,
@@ -48,7 +48,7 @@ pub fn construct_migrate_tx(
         vec![consumed_resource_witness],
         vec![created_resource],
         latest_cm_tree_root,
-        &KindTable::empty(),
+        &KindTree::empty(),
     );
     let compliance_unit = compliance_unit::create(&compliance_witness, ProofType::Groth16)?;
 
@@ -93,7 +93,7 @@ pub fn construct_migrate_tx(
 fn simple_migrate_test() {
     use anoma_rm_risc0::{
         compliance::INITIAL_ROOT,
-        constants::{init_kind_table_from_file, kind_table_root},
+        constants::{init_kind_tree_from_file, kind_tree_root},
         merkle_path::MerklePath,
         nullifier_key::{self, NullifierKey},
         proving_system::JournalEncoding,
@@ -108,11 +108,11 @@ fn simple_migrate_test() {
     use anomapay_erc20_witness::ValueInfo;
     use anomapay_erc20_witness::{calculate_label_ref, calculate_persistent_value_ref};
 
-    // The transaction carries an empty kind table (no precomputed kind
-    // points), so `Transaction::verify` needs the global table initialized
-    // to the same empty set before it will accept the commitment.
-    let kind_table_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("kind_table.json");
-    init_kind_table_from_file(&kind_table_path).unwrap();
+    // The transaction carries an empty kind tree (no precomputed kind
+    // bases), so `Transaction::verify` needs the global tree initialized
+    // to the same empty set before it will accept the root.
+    let kind_tree_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("kind_tree.json");
+    init_kind_tree_from_file(&kind_tree_path).unwrap();
 
     // Common parameters. Two migrated resources, each from a different
     // forwarder deployment, but sharing one erc20 token address.
@@ -240,6 +240,6 @@ fn simple_migrate_test() {
     println!("Tx build duration time: {:?}", tx_start_timer.elapsed());
 
     // Verify the transaction
-    let kind_table_commitment = kind_table_root().unwrap();
-    transaction::verify(&tx, kind_table_commitment, JournalEncoding::Risc0Serde).unwrap();
+    let kind_tree_root_digest = kind_tree_root().unwrap();
+    transaction::verify(&tx, kind_tree_root_digest, JournalEncoding::Risc0Serde).unwrap();
 }

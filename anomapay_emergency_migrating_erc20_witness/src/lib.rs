@@ -19,10 +19,10 @@ use anoma_rm_risc0_gadgets::{
     authority::AuthoritySignature, encryption::Ciphertext, evm::ForwarderCalldata,
 };
 use anomapay_erc20_witness::{
-    DeletionCriterion, EncryptionInfo, LabelInfo, PermitInfo, ResourceWithLabel, ValueInfo,
-    calculate_label_ref, calculate_persistent_value_ref,
+    DeletionCriterion, EncryptionInfo, LabelInfo, OrderingInfo, PermitInfo, ResourceWithLabel,
+    ValueInfo, calculate_label_ref, calculate_persistent_value_ref,
     calculate_value_ref_from_ethereum_account_addr,
-    call_type::{encode_unwrap_forwarder_input, encode_wrap_forwarder_input},
+    call_type::{encode_ordering_tags, encode_unwrap_forwarder_input, encode_wrap_forwarder_input},
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,8 +45,8 @@ pub struct EmergencyMigratingTokenTransferWitness {
     pub auth_sig: Option<AuthoritySignature>,
     /// See EncryptionInfo struct.
     pub encryption_info: Option<EncryptionInfo>,
-    /// See NewForwarderInfo struct.
-    pub new_forwarder_info: Option<NewForwarderInfo>,
+    /// See EmergencyMigratingForwarderInfo struct.
+    pub emergency_migrating_forwarder_info: Option<EmergencyMigratingForwarderInfo>,
     /// See LabelInfo struct.
     pub label_info: Option<LabelInfo>,
     /// See ValueInfo Struct
@@ -54,12 +54,25 @@ pub struct EmergencyMigratingTokenTransferWitness {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct NewForwarderInfo {
+pub struct EmergencyMigratingForwarderInfo {
     pub call_type: EmergencyMigratingCallType,
     // The ethereum_account_addr is not needed for migration
     pub ethereum_account_addr: Option<Vec<u8>>,
     pub permit_info: Option<PermitInfo>,
     pub migrate_info: Option<MigrateInfo>,
+    /// See OrderingInfo struct. None is an unordered call.
+    pub ordering_info: Option<OrderingInfo>,
+}
+
+impl EmergencyMigratingForwarderInfo {
+    /// Constrains when this forwarder call runs relative to the calls of other resources.
+    pub fn with_ordering(mut self, after_tags: Vec<Digest>, before_tags: Vec<Digest>) -> Self {
+        self.ordering_info = Some(OrderingInfo {
+            after_tags,
+            before_tags,
+        });
+        self
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -117,7 +130,7 @@ impl EmergencyMigratingTokenTransferWitness {
         action_root: &[u8],
     ) -> Result<Vec<ExpirableBlob>, ArmError> {
         let forwarder_info = self
-            .new_forwarder_info
+            .emergency_migrating_forwarder_info
             .as_ref()
             .ok_or(ArmError::MissingField("Forwarder info"))?;
 
@@ -306,6 +319,13 @@ impl EmergencyMigratingTokenTransferWitness {
         };
 
         let forwarder_call_data = ForwarderCalldata::from_bytes(forwarder_addr, inputs, vec![]);
+        let forwarder_call_data = match forwarder_info.ordering_info.as_ref() {
+            Some(ordering_info) => forwarder_call_data.with_ordering(
+                encode_ordering_tags(&ordering_info.after_tags),
+                encode_ordering_tags(&ordering_info.before_tags),
+            ),
+            None => forwarder_call_data,
+        };
         let call_data_expirable_blob = ExpirableBlob {
             blob: bytes_to_words(&forwarder_call_data.encode()),
             deletion_criterion: DeletionCriterion::Immediately as u32,
@@ -454,7 +474,7 @@ impl EmergencyMigratingTokenTransferWitness {
         nf_key: Option<NullifierKey>,
         auth_sig: Option<AuthoritySignature>,
         encryption_info: Option<EncryptionInfo>,
-        new_forwarder_info: Option<NewForwarderInfo>,
+        emergency_migrating_forwarder_info: Option<EmergencyMigratingForwarderInfo>,
         label_info: Option<LabelInfo>,
         value_info: Option<ValueInfo>,
     ) -> Self {
@@ -465,7 +485,7 @@ impl EmergencyMigratingTokenTransferWitness {
             nf_key,
             auth_sig,
             encryption_info,
-            new_forwarder_info,
+            emergency_migrating_forwarder_info,
             label_info,
             value_info,
         }

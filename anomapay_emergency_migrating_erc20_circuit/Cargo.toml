@@ -7,8 +7,8 @@ version = "2.0.0"
 [workspace]
 
 [dependencies]
-anoma-rm-risc0 = { version = "2.0.0-rc.7", default-features = false }
-anoma-rm-risc0-gadgets = "2.0.0-rc.7"
+anoma-rm-risc0 = { default-features = false, git = "https://github.com/anoma/arm-risc0", tag = "v2.0.0-rc.7.1", version = "2.0.0-rc.7.1" }
+anoma-rm-risc0-gadgets = { git = "https://github.com/anoma/arm-risc0", tag = "v2.0.0-rc.7.1", version = "2.0.0-rc.7.1" }
 anomapay_emergency_migrating_erc20_library = { path = "../anomapay_emergency_migrating_erc20_library" }
 anomapay_emergency_migrating_erc20_witness = { path = "../anomapay_emergency_migrating_erc20_witness" }
 anomapay_erc20_library = { path = "../anomapay_erc20_library" }

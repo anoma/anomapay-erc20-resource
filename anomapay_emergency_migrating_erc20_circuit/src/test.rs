@@ -390,7 +390,7 @@ fn test_negative_migration_with_empty_batch() {
 
     resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -421,7 +421,7 @@ fn test_negative_migration_with_missing_migrate_info() {
     // Remove the migrate_info to simulate missing migration data
     resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info = None;
@@ -437,7 +437,7 @@ fn test_negative_migration_with_wrong_is_ephemeral_in_migrate_info() {
     // Change the is_ephemeral flag to false in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -456,7 +456,7 @@ fn test_negative_migration_with_wrong_auth_pk_in_value_info() {
     // Change the auth_pk in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -477,7 +477,7 @@ fn test_negative_migration_with_wrong_encryption_pk_in_value_info() {
     // Change the encryption_pk in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -498,7 +498,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
     // Change the auth_sig in the migrate_info, using a wrong auth_sk
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -516,7 +516,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
     let mut resource_logic = create_migrate_resource_logic();
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -535,7 +535,7 @@ fn test_negative_migration_with_wrong_auth_sig() {
     let mut resource_logic = create_migrate_resource_logic();
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -559,7 +559,7 @@ fn test_negative_migration_with_wrong_quantity() {
     // Change the quantity in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -577,7 +577,7 @@ fn test_negative_migration_with_wrong_nf_key() {
     // Change the nf_key in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
@@ -596,7 +596,7 @@ fn test_negative_migration_with_wrong_forwarder_addr_in_migrate_info() {
     // Change the forwarder_addr in the migrate_info
     if let Some(migrate_info) = &mut resource_logic
         .witness
-        .new_forwarder_info
+        .emergency_migrating_forwarder_info
         .as_mut()
         .unwrap()
         .migrate_info
