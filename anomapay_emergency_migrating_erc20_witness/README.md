@@ -12,28 +12,41 @@ so this crate only adds what changes: the forwarder shape and the migration call
 
 ### `EmergencyMigratingTokenTransferWitness`
 Same fields as `TokenTransferWitness`, except `forwarder_info` is replaced by
-`new_forwarder_info: Option<NewForwarderInfo>`.
+`emergency_migrating_forwarder_info: Option<EmergencyMigratingForwarderInfo>`.
 
-### `NewForwarderInfo`
+### `EmergencyMigratingForwarderInfo`
 ```rust
-pub struct NewForwarderInfo {
+pub struct EmergencyMigratingForwarderInfo {
     pub call_type: EmergencyMigratingCallType,               // Wrap | Unwrap | Migrate
     pub ethereum_account_addr: Option<Vec<u8>>, // not needed for Migrate
     pub permit_info: Option<PermitInfo>,
     pub migrate_info: Option<MigrateInfo>,   // present only for Migrate
+    pub ordering_info: Option<OrderingInfo>, // None is an unordered call
 }
 ```
 
+`ordering_info` is the base crate's `OrderingInfo` and works exactly as in its
+`ForwarderInfo`; it is set with `EmergencyMigratingForwarderInfo::with_ordering` (or
+`EmergencyMigratingTransferLogic::with_ordering` on the host side, which returns
+`Result` and rejects a non-ephemeral resource or missing forwarder info, since
+only an ephemeral resource emits a forwarder call for the tags to ride on).
+
 ### `MigrateInfo`
-The extra data a `Migrate` call proves about the **legacy resource being migrated**:
-its `Resource`, nullifier key, a Merkle `path` from the legacy commitment tree
-(proving the resource existed), the owner's authorization signature and
-`ValueInfo`, and the **legacy** forwarder address used in its label.
+The extra data a `Migrate` call proves about the **batch of legacy resources being
+migrated**: a non-empty `entries: Vec<MigrateEntry>`, plus a single `auth_sig` over
+the action tree root that authorizes the whole batch.
+
+Each `MigrateEntry` holds one legacy resource: its `Resource`, nullifier key, a
+Merkle `path` from the legacy commitment tree (proving the resource existed), its
+owner's `ValueInfo`, and the **legacy** forwarder address used in its label —
+entries may come from different legacy forwarder deployments. Because one
+signature covers the batch, every entry must share the same `auth_pk`.
 
 ### `EmergencyMigratingCallType` ([`call_type.rs`](src/call_type.rs))
-Adds `Migrate` to `Wrap`/`Unwrap`, plus `encode_migrate_forwarder_input`, which
-ABI-encodes the `MigrateEntry` calldata (nullifier, legacy commitment-tree root, legacy
-logic ref, legacy forwarder address) for the EVM forwarder.
+Adds `Migrate` to `Wrap`/`Unwrap`, plus `encode_migrate_forwarder_input_batch`, which
+ABI-encodes the batch calldata for the EVM forwarder: the token address, the total
+migrated quantity, and one Solidity `MigrateEntry` per resource (nullifier, legacy
+commitment-tree root, legacy logic ref, legacy forwarder address).
 
 ## The migration constraint
 
@@ -41,15 +54,17 @@ When `constrain()` runs on an ephemeral resource with `EmergencyMigratingCallTyp
 enforces (in [`src/lib.rs`](src/lib.rs)):
 
 - migration must be triggered by a **consumed** resource;
-- the migrated legacy resource is **non-ephemeral**;
-- its `value_ref` matches its `ValueInfo`, and the owner's authorization
-  signature over the action tree root verifies under
+- the batch is **non-empty**;
+- every migrated legacy resource is **non-ephemeral**;
+- each entry's `value_ref` matches its `ValueInfo`, and all entries share the
+  same `auth_pk`, under which the batch's single authorization signature over
+  the action tree root verifies with
   `TokenTransferAuthorizationEmergencyMigrating`;
-- its quantity equals the trigger resource's quantity;
-- its `label_ref` matches `sha2(legacy_forwarder_addr, erc20_token_addr)`;
+- each entry's `label_ref` matches `sha2(legacy_forwarder_addr, erc20_token_addr)`;
+- the entries' quantities sum (without overflow) to the trigger resource's quantity;
 
-then it derives the migrated resource's nullifier and Merkle root and emits the
-`Migrate` forwarder calldata as the external payload.
+then it derives each migrated resource's nullifier and Merkle root and emits the
+batched `Migrate` forwarder calldata as the external payload.
 
 `Wrap` and `Unwrap` behave as in the base crate.
 

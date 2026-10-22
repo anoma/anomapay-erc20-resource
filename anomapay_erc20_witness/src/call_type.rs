@@ -1,6 +1,6 @@
 use alloy_primitives::{Address, B256, U256};
 use alloy_sol_types::{SolValue, sol};
-use anoma_rm_risc0::error::ArmError;
+use anoma_rm_risc0::{Digest, error::ArmError};
 
 sol! {
     #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -92,6 +92,13 @@ pub fn encode_wrap_forwarder_input(
     Ok((CallType::Wrap, erc20_token, quantity, wrap_data).abi_encode_params())
 }
 
+/// Encodes resource tags as the `bytes32` ordering tags carried by `ForwarderCalldata`.
+pub fn encode_ordering_tags(tags: &[Digest]) -> Vec<B256> {
+    tags.iter()
+        .map(|tag| B256::from_slice(tag.as_bytes()))
+        .collect()
+}
+
 #[test]
 fn forward_call_data_test() {
     use anoma_rm_risc0_gadgets::evm::ForwarderCalldata;
@@ -112,6 +119,31 @@ fn forward_call_data_test() {
     assert_eq!(data.untrustedForwarder, decoded_data.untrustedForwarder);
     assert_eq!(data.input, decoded_data.input);
     assert_eq!(data.output, decoded_data.output);
+}
+
+#[test]
+fn ordering_tags_reach_the_forwarder_calldata() {
+    use anoma_rm_risc0_gadgets::evm::ForwarderCalldata;
+
+    let addr = hex::decode("ffffffffffffffffffffffffffffffffffffffff").unwrap();
+    let after = Digest::new([1u32; 8]);
+    let before = Digest::new([2u32; 8]);
+
+    let data = ForwarderCalldata::from_bytes(&addr, vec![0xab], vec![0xcd]).with_ordering(
+        encode_ordering_tags(&[after]),
+        encode_ordering_tags(&[before]),
+    );
+
+    let decoded_data = ForwarderCalldata::decode(&data.encode()).unwrap();
+
+    assert_eq!(
+        decoded_data.afterTags,
+        vec![B256::from_slice(after.as_bytes())]
+    );
+    assert_eq!(
+        decoded_data.beforeTags,
+        vec![B256::from_slice(before.as_bytes())]
+    );
 }
 
 #[test]

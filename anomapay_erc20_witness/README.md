@@ -22,7 +22,7 @@ consumed or created resource:
 | `nf_key` | nullifier key (required for consumed resources) |
 | `auth_sig` | authorization signature (required for consumed persistent resources) |
 | `encryption_info` | keys/nonce for the resource + discovery ciphertexts |
-| `forwarder_info` | EVM forwarder call data (`Wrap`/`Unwrap` + permit) |
+| `forwarder_info` | EVM forwarder call data (`Wrap`/`Unwrap` + permit + call-ordering tags) |
 | `label_info` | forwarder address + ERC20 token address (defines the label) |
 | `value_info` | authorization + encryption public keys (defines the value) |
 
@@ -45,7 +45,31 @@ commits.
 `CallType` (`Wrap`/`Unwrap`) plus `encode_wrap_forwarder_input` /
 `encode_unwrap_forwarder_input`, which `alloy-sol-types`–encode the EVM
 forwarder calldata (including the Permit2 `WrapData`) that the ARM places in the
-action's external payload.
+action's external payload, and `encode_ordering_tags`, which encodes the
+`after_tags` / `before_tags` of `OrderingInfo` as the `bytes32` tags
+`ForwarderCalldata` carries.
+
+### Call ordering
+`ForwarderInfo` carries an optional `OrderingInfo`:
+
+```rust
+pub struct OrderingInfo {
+    pub after_tags: Vec<Digest>,  // calls that must run before this one
+    pub before_tags: Vec<Digest>, // calls that must not run before this one
+}
+```
+
+A tag in `after_tags` names a resource whose forwarder calls must have run
+before this call, one in `before_tags` a resource whose calls must not have.
+`ordering_info: None` — the default for every constructor — is an unordered
+call, and `ForwarderInfo::with_ordering` (or `TransferLogic::with_ordering` on
+the host side) sets it.
+
+Only an ephemeral resource emits a forwarder call: `constrain` builds the
+calldata on that path alone, so ordering tags on any other shape would be
+dropped. `TransferLogic::with_ordering` therefore returns `Result` and rejects a
+non-ephemeral resource or missing forwarder info rather than silently ignoring
+the constraint.
 
 ## Where it's used
 

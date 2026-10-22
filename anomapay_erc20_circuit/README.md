@@ -14,11 +14,17 @@ which reproduces:
 
 ```bash
 ELFs ready at:
-ImageID: 51c2403f4e1de40c3c3ecef69385f8772ee99b4a610e88f1ad2b1b85b481a7f2
+ImageID: 533868e294fc632d1809edb4875d6a084746817b230e95351845d175449f2404
 anomapay_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-erc20-circuit-guest.bin
 ```
 
 The same value is also embedded as the committed guest binary at `anomapay_erc20_library/elf/anomapay-erc20-circuit-guest.bin` in this repo.
+
+It was last rotated for the `anoma-rm-risc0` / `anoma-rm-risc0-gadgets` bump to
+`v2.0.0-rc.7.1`, which added the `afterTags` / `beforeTags` ordering fields to
+`ForwarderCalldata`, and for the witness-side `OrderingInfo` (`after_tags` /
+`before_tags`) that now populates them — both change the ABI-encoded forwarder
+calldata the guest commits to, and the witness layout the guest deserializes.
 
 ## ImageID drift after future changes
 
