@@ -22,8 +22,8 @@ version = "2.0.0-rc.2"
 [workspace.dependencies]
 alloy-primitives = "1.0.23"
 alloy-sol-types = "1.0.23"
-anoma-rm-risc0 = { default-features = false, git = "https://github.com/anoma/arm-risc0", tag = "v2.0.0-rc.7.1", version = "2.0.0-rc.7.1" }
-anoma-rm-risc0-gadgets = { git = "https://github.com/anoma/arm-risc0", tag = "v2.0.0-rc.7.1", version = "2.0.0-rc.7.1" }
+anoma-rm-risc0 = { default-features = false, git = "https://github.com/anoma/arm-risc0", rev = "aaac2d2dc795c45c50615b0bf0ed5f8bc06cff9e", version = "2.0.0-rc.7.1" }
+anoma-rm-risc0-gadgets = { git = "https://github.com/anoma/arm-risc0", rev = "aaac2d2dc795c45c50615b0bf0ed5f8bc06cff9e", version = "2.0.0-rc.7.1" }
 anomapay_emergency_migrating_erc20_library = { version = "2.0.0-rc.2", path = "anomapay_emergency_migrating_erc20_library" }
 anomapay_emergency_migrating_erc20_witness = { version = "2.0.0-rc.2", path = "anomapay_emergency_migrating_erc20_witness" }
 anomapay_erc20_library = { version = "2.0.0-rc.2", path = "anomapay_erc20_library" }
