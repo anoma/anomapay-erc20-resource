@@ -9,7 +9,7 @@ use anoma_rm_risc0::{
     logic_proof::LogicProver,
     nullifier_key::NullifierKey,
     proving_system::ProofType,
-    resource::{ConsumedResourceWitness, Resource},
+    resource::{ConsumedResourceWitness, Resource, ResourceWitness},
     transaction::{self, Delta, Transaction},
 };
 use anoma_rm_risc0_gadgets::authority::{AuthoritySignature, AuthorityVerifyingKey};
@@ -45,8 +45,10 @@ pub fn construct_migrate_tx(
     let consumed_resource_witness =
         ConsumedResourceWitness::from_resource(consumed_resource, consumed_nf_key.clone());
     let compliance_witness = compliance::from_resources_with_ephemeral_root(
-        vec![consumed_resource_witness],
-        vec![created_resource],
+        vec![
+            ResourceWitness::Consumed(consumed_resource_witness),
+            ResourceWitness::Created(created_resource),
+        ],
         latest_cm_tree_root,
         &KindTree::empty(),
     );
