@@ -58,9 +58,7 @@ resource logic of a single consumed or created resource (the resource itself,
 nullifier key, authorization signature, encryption info, forwarder/permit data,
 label and value info). Implements the ARM `LogicCircuit` constraint function
 that the guest executes, plus the Solidity-ABI (`alloy-sol-types`) encoding for
-the EVM forwarder `Wrap`/`Unwrap` calldata. `ForwarderInfo` also carries an
-optional `OrderingInfo` (`after_tags` / `before_tags`), which constrains when
-this resource's forwarder call runs relative to the calls of other resources.
+the EVM forwarder `Wrap`/`Unwrap` calldata.
 Authorization domain: `TokenTransferAuthorization`.
 
 ### `anomapay_emergency_migrating_erc20_witness`
@@ -71,8 +69,7 @@ Authorization domain: `TokenTransferAuthorizationEmergencyMigrating`.
 
 ### `anomapay_erc20_library`
 Host-side API for base proving. `TransferLogic` wraps a witness and constructs
-resource-logic proofs; `with_ordering` sets the forwarder call's ordering tags.
-Exposes:
+resource-logic proofs. Exposes:
 - `ANOMAPAY_ERC20_CIRCUIT_ELF` — the embedded guest binary
   (`elf/anomapay-erc20-circuit-guest.bin`).
 - `ANOMAPAY_ERC20_CIRCUIT_ID` — the guest `ImageID` (a `Digest`) used for verification
@@ -171,15 +168,15 @@ Our software undergoes regular audits:
 ## Versioning
 
 The workspace crates (`anomapay_erc20_witness`, `anomapay_emergency_migrating_erc20_witness`, `anomapay_erc20_library`, `anomapay_emergency_migrating_erc20_library`) share the
-version in `[workspace.package]` (currently `2.0.0-rc.2`). The circuit crates are
+version in `[workspace.package]` (currently `2.0.0-rc.3`). The circuit crates are
 versioned independently (currently `2.0.0`).
 
-`rc.2` is a breaking release candidate, not a patch of `rc.1`: `ForwarderInfo` and the
-emergency-migrating forwarder info gained an `ordering_info: Option<OrderingInfo>` field
-carrying the `after_tags` / `before_tags` call-ordering tags, the emergency-migrating
-`NewForwarderInfo` was renamed to `EmergencyMigratingForwarderInfo` and its witness field
-`new_forwarder_info` to `emergency_migrating_forwarder_info` (so code built against `rc.1`
-no longer compiles), and both guest `ImageID`s were rotated.
+`rc.3` is a breaking release candidate, not a patch of `rc.1` (`rc.2` was never
+published): the emergency-migrating `NewForwarderInfo` was renamed to
+`EmergencyMigratingForwarderInfo` and its witness field `new_forwarder_info` to
+`emergency_migrating_forwarder_info` (so code built against `rc.1` no longer
+compiles), the ARM dependencies moved to `2.0.0-rc.8` from crates.io, and both
+guest `ImageID`s were rotated.
 
 ## License
 

@@ -4,8 +4,7 @@
 //! Of particular interest are the TransferLogic struct, and the TokenTransferWitness structs.
 
 use anoma_rm_risc0::{
-    Digest, error::ArmError, logic_proof::LogicProver, nullifier_key::NullifierKey,
-    resource::Resource,
+    Digest, logic_proof::LogicProver, nullifier_key::NullifierKey, resource::Resource,
 };
 use anoma_rm_risc0_gadgets::authority::{AuthoritySignature, AuthorityVerifyingKey};
 use hex::FromHex;
@@ -26,7 +25,7 @@ pub const ANOMAPAY_ERC20_CIRCUIT_ELF: &[u8] =
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
     pub static ref ANOMAPAY_ERC20_CIRCUIT_ID: Digest =
-        Digest::from_hex("533868e294fc632d1809edb4875d6a084746817b230e95351845d175449f2404")
+        Digest::from_hex("59eea0bc111b9d18b53bdc49e20d2fbc0c1c89e59782ed546b99b9da4e53da16")
             .unwrap();
 }
 
@@ -145,7 +144,6 @@ impl TransferLogic {
             call_type: CallType::Wrap,
             ethereum_account_addr,
             permit_info: Some(permit_info),
-            ordering_info: None,
         };
         let label_info = LabelInfo {
             forwarder_addr,
@@ -177,7 +175,6 @@ impl TransferLogic {
             call_type: CallType::Unwrap,
             ethereum_account_addr,
             permit_info: None,
-            ordering_info: None,
         };
         let label_info = LabelInfo {
             forwarder_addr,
@@ -196,34 +193,6 @@ impl TransferLogic {
             None,
         )
     }
-
-    /// Constrains when this resource's forwarder call runs relative to the calls of other
-    /// resources: a tag in `after_tags` names a resource whose calls must have run already,
-    /// a tag in `before_tags` one whose calls must not have.
-    ///
-    /// Only the ephemeral wrap/unwrap legs carry a forwarder call: `constrain` emits an
-    /// external payload for an ephemeral resource only, and reads the forwarder info solely
-    /// on that path. Ordering a logic that will emit no forwarder call is a mistake with no
-    /// safe reading — the constraint could only be dropped — so both a non-ephemeral resource
-    /// and missing forwarder info are rejected rather than ignored.
-    pub fn with_ordering(
-        mut self,
-        after_tags: Vec<Digest>,
-        before_tags: Vec<Digest>,
-    ) -> Result<Self, ArmError> {
-        if !self.witness.resource.is_ephemeral {
-            return Err(ArmError::ProveFailed(
-                "Only an ephemeral resource carries a forwarder call to order".to_string(),
-            ));
-        }
-        let forwarder_info = self
-            .witness
-            .forwarder_info
-            .take()
-            .ok_or(ArmError::MissingField("Forwarder info"))?;
-        self.witness.forwarder_info = Some(forwarder_info.with_ordering(after_tags, before_tags));
-        Ok(self)
-    }
 }
 
 impl LogicProver for TransferLogic {
@@ -238,86 +207,5 @@ impl LogicProver for TransferLogic {
 
     fn witness(&self) -> &Self::Witness {
         &self.witness
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn ephemeral_resource() -> Resource {
-        Resource {
-            is_ephemeral: true,
-            ..Resource::default()
-        }
-    }
-
-    // Note `Resource::default()` is ephemeral, so a persistent resource must say so.
-    fn persistent_resource() -> Resource {
-        Resource {
-            is_ephemeral: false,
-            ..Resource::default()
-        }
-    }
-
-    /// The ephemeral unwrap (burn) leg: the only shape whose `constrain` emits a
-    /// forwarder call for the ordering tags to ride on.
-    fn burn_logic(resource: Resource) -> TransferLogic {
-        TransferLogic::burn_resource_logic(
-            resource,
-            Digest::default(),
-            vec![0u8; 20],
-            vec![1u8; 20],
-            vec![2u8; 20],
-        )
-    }
-
-    #[test]
-    fn with_ordering_sets_the_tags_on_an_ephemeral_forwarder_leg() {
-        let after = Digest::new([1u32; 8]);
-        let before = Digest::new([2u32; 8]);
-
-        let logic = burn_logic(ephemeral_resource())
-            .with_ordering(vec![after], vec![before])
-            .unwrap();
-
-        let forwarder_info = logic.witness.forwarder_info.as_ref().unwrap();
-        let ordering_info = forwarder_info.ordering_info.as_ref().unwrap();
-        assert_eq!(ordering_info.after_tags, vec![after]);
-        assert_eq!(ordering_info.before_tags, vec![before]);
-    }
-
-    #[test]
-    fn with_ordering_is_rejected_on_a_persistent_resource_with_forwarder_info() {
-        // Forwarder info alone does not mean a forwarder call: `constrain` emits an
-        // external payload only for an ephemeral resource, so the tags would be dropped.
-        let logic = burn_logic(persistent_resource());
-        assert!(logic.witness.forwarder_info.is_some());
-
-        assert!(matches!(
-            logic.with_ordering(vec![Digest::new([1u32; 8])], vec![]),
-            Err(ArmError::ProveFailed(_))
-        ));
-    }
-
-    #[test]
-    fn with_ordering_is_rejected_without_forwarder_info() {
-        // An ephemeral resource, so only the missing forwarder info can reject it.
-        let logic = TransferLogic::new(
-            ephemeral_resource(),
-            false,
-            Digest::default(),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
-
-        assert!(matches!(
-            logic.with_ordering(vec![Digest::new([1u32; 8])], vec![]),
-            Err(ArmError::MissingField("Forwarder info"))
-        ));
     }
 }

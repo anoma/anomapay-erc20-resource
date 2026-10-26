@@ -228,8 +228,9 @@ dependencies = [
 
 [[package]]
 name = "anoma-rm-core"
-version = "2.0.0-rc.7.1"
-source = "git+https://github.com/anoma/arm-risc0?tag=v2.0.0-rc.7.1#8f5202fafc3b81d0ca74a37570f5bf840f98ff01"
+version = "2.0.0-rc.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4409999061217d37a71e7c7c9f7d8e17974879ffbeb9abb6fbe5cfec320f19dd"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -241,8 +242,9 @@ dependencies = [
 
 [[package]]
 name = "anoma-rm-risc0"
-version = "2.0.0-rc.7.1"
-source = "git+https://github.com/anoma/arm-risc0?tag=v2.0.0-rc.7.1#8f5202fafc3b81d0ca74a37570f5bf840f98ff01"
+version = "2.0.0-rc.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b40b4594f038609c2cb4196b3668b64843e0cfd53d9e61113b0f8fb387a1a468"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -263,8 +265,9 @@ dependencies = [
 
 [[package]]
 name = "anoma-rm-risc0-gadgets"
-version = "2.0.0-rc.7.1"
-source = "git+https://github.com/anoma/arm-risc0?tag=v2.0.0-rc.7.1#8f5202fafc3b81d0ca74a37570f5bf840f98ff01"
+version = "2.0.0-rc.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "032dcdc983752661371c5f19e37b15959c837f29a6dab9fe83531569842469d2"
 dependencies = [
  "aes-gcm",
  "alloy-primitives",
@@ -280,7 +283,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_emergency_migrating_erc20_library"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -294,7 +297,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_emergency_migrating_erc20_witness"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -307,7 +310,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_erc20_library"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -320,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "anomapay_erc20_witness"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",

@@ -21,22 +21,11 @@ witness fields by hand:
 | `mint_resource_logic_with_permit` | ephemeral **wrap** (mint) leg, carrying the Permit2 signature |
 | `burn_resource_logic` | ephemeral **unwrap** (burn) leg |
 
-### `TransferLogic::with_ordering`
-Sets the `OrderingInfo` on the wrapped witness' `ForwarderInfo`, constraining when
-this resource's forwarder call runs relative to the calls of other resources: a tag
-in `after_tags` names a resource whose calls must have run before this one, one in
-`before_tags` a resource whose calls must not have.
-
-Only the ephemeral wrap/unwrap legs emit a forwarder call for the tags to ride on,
-so it returns `Result` and rejects a non-ephemeral resource or missing forwarder
-info rather than silently dropping the constraint. Without it the call is
-unordered (`ordering_info: None`).
-
 ### Embedded guest + image id
 - `ANOMAPAY_ERC20_CIRCUIT_ELF` — the guest binary, embedded via `include_bytes!` from
   [`elf/anomapay-erc20-circuit-guest.bin`](elf/anomapay-erc20-circuit-guest.bin).
 - `ANOMAPAY_ERC20_CIRCUIT_ID` — the guest `ImageID` (a `Digest`,
-  `533868e294fc632d1809edb4875d6a084746817b230e95351845d175449f2404`) used to
+  `59eea0bc111b9d18b53bdc49e20d2fbc0c1c89e59782ed546b99b9da4e53da16`) used to
   verify proofs on- and off-chain.
 
 > [!IMPORTANT]
