@@ -21,15 +21,8 @@ pub struct EmergencyMigratingForwarderInfo {
     pub ethereum_account_addr: Option<Vec<u8>>, // not needed for Migrate
     pub permit_info: Option<PermitInfo>,
     pub migrate_info: Option<MigrateInfo>,   // present only for Migrate
-    pub ordering_info: Option<OrderingInfo>, // None is an unordered call
 }
 ```
-
-`ordering_info` is the base crate's `OrderingInfo` and works exactly as in its
-`ForwarderInfo`; it is set with `EmergencyMigratingForwarderInfo::with_ordering` (or
-`EmergencyMigratingTransferLogic::with_ordering` on the host side, which returns
-`Result` and rejects a non-ephemeral resource or missing forwarder info, since
-only an ephemeral resource emits a forwarder call for the tags to ride on).
 
 ### `MigrateInfo`
 The extra data a `Migrate` call proves about the **batch of legacy resources being

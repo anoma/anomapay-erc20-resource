@@ -3,9 +3,7 @@
 //!
 pub mod call_type;
 
-use crate::call_type::{
-    CallType, encode_ordering_tags, encode_unwrap_forwarder_input, encode_wrap_forwarder_input,
-};
+use crate::call_type::{CallType, encode_unwrap_forwarder_input, encode_wrap_forwarder_input};
 pub use anoma_rm_risc0::resource_logic::LogicCircuit;
 use anoma_rm_risc0::{
     Digest,
@@ -69,16 +67,6 @@ pub struct EncryptionInfo {
     pub discovery_ciphertext: Vec<u32>,
 }
 
-/// OrderingInfo constrains when a forwarder call runs relative to the calls of other
-/// resources. Absent ordering info means an unordered call.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct OrderingInfo {
-    /// Tags of the resources whose forwarder calls must run before this call.
-    pub after_tags: Vec<Digest>,
-    /// Tags of the resources whose forwarder calls must not run before this call.
-    pub before_tags: Vec<Digest>,
-}
-
 /// ForwarderInfo holds information about the forwarder contract being used by a transaction.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ForwarderInfo {
@@ -88,19 +76,6 @@ pub struct ForwarderInfo {
     pub ethereum_account_addr: Vec<u8>,
     /// PermitInfo (see struct)
     pub permit_info: Option<PermitInfo>,
-    /// See OrderingInfo struct. None is an unordered call.
-    pub ordering_info: Option<OrderingInfo>,
-}
-
-impl ForwarderInfo {
-    /// Constrains when this forwarder call runs relative to the calls of other resources.
-    pub fn with_ordering(mut self, after_tags: Vec<Digest>, before_tags: Vec<Digest>) -> Self {
-        self.ordering_info = Some(OrderingInfo {
-            after_tags,
-            before_tags,
-        });
-        self
-    }
 }
 
 /// LabelInfo holds information about label plaintext.
@@ -246,13 +221,6 @@ impl TokenTransferWitness {
         };
 
         let forwarder_call_data = ForwarderCalldata::from_bytes(forwarder_addr, inputs, vec![]);
-        let forwarder_call_data = match forwarder_info.ordering_info.as_ref() {
-            Some(ordering_info) => forwarder_call_data.with_ordering(
-                encode_ordering_tags(&ordering_info.after_tags),
-                encode_ordering_tags(&ordering_info.before_tags),
-            ),
-            None => forwarder_call_data,
-        };
         let call_data_expirable_blob = ExpirableBlob {
             blob: bytes_to_words(&forwarder_call_data.encode()),
             deletion_criterion: DeletionCriterion::Immediately as u32,
