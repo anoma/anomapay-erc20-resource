@@ -227,11 +227,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "anoma-rm-risc0"
-version = "2.0.0-rc.5"
+name = "anoma-rm-core"
+version = "2.0.0-rc.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adf60b4865adfb1bd8203077f3f455de7b53dac928a8acc9640b523ee211be52"
+checksum = "574ea77bcf67d82cab018d334bf896132c37746892e91d348c5e2588a4912648"
 dependencies = [
+ "bincode",
+ "bytemuck",
+ "hex",
+ "risc0-zkp",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "anoma-rm-risc0"
+version = "2.0.0-rc.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6ca86610b1937f07c443c5902297107b6939b8232763e649c79d02b08b13fd1"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "anoma-rm-core",
  "bincode",
  "bytemuck",
  "hex",
@@ -248,9 +265,9 @@ dependencies = [
 
 [[package]]
 name = "anoma-rm-risc0-gadgets"
-version = "2.0.0-rc.5"
+version = "2.0.0-rc.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0898011820cde42d76c39b1957398da2b31eb6ec7762772f7db4bafcd8e817e8"
+checksum = "6bd2c5904affd6cdab244bfc48f4e8af311b02ae5ea05cb661774df14fe45f4e"
 dependencies = [
  "aes-gcm",
  "alloy-primitives",
@@ -4802,7 +4819,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_library"
-version = "3.0.0-rc.2"
+version = "3.0.0-rc.2.1"
 dependencies = [
  "anoma-rm-risc0",
  "anoma-rm-risc0-gadgets",
@@ -4815,7 +4832,7 @@ dependencies = [
 
 [[package]]
 name = "transfer_witness"
-version = "3.0.0-rc.2"
+version = "3.0.0-rc.2.1"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",

@@ -140,7 +140,7 @@ Our software undergoes regular audits:
 ## Versioning
 
 The workspace crates (`transfer_witness`, `transfer_library`) share the
-version in `[workspace.package]` (currently `3.0.0-rc.2`). The circuit crate
+version in `[workspace.package]` (currently `3.0.0-rc.2.1`). The circuit crate
 is versioned independently (currently `2.0.0`).
 
 ## License
