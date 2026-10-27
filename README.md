@@ -168,10 +168,16 @@ Our software undergoes regular audits:
 ## Versioning
 
 The workspace crates (`anomapay_erc20_witness`, `anomapay_emergency_migrating_erc20_witness`, `anomapay_erc20_library`, `anomapay_emergency_migrating_erc20_library`) share the
-version in `[workspace.package]` (currently `2.0.0-rc.3`). The circuit crates are
+version in `[workspace.package]` (currently `2.0.0-rc.4`). The circuit crates are
 versioned independently (currently `2.0.0`).
 
-`rc.3` is a breaking release candidate, not a patch of `rc.1` (`rc.2` was never
+`rc.4` tracks the ARM dependency bump to `2.0.0-rc.8.1`, which renamed
+`LogicInstance::root` to `action_tree_root`. The rename is source-breaking for
+anything that constructs a `LogicInstance` literal, but the committed journal
+layout is unchanged — only the field's name moved. Both guest `ImageID`s were
+rotated, because the ARM upgrade re-links the guest.
+
+`rc.3` was a breaking release candidate, not a patch of `rc.1` (`rc.2` was never
 published): the emergency-migrating `NewForwarderInfo` was renamed to
 `EmergencyMigratingForwarderInfo` and its witness field `new_forwarder_info` to
 `emergency_migrating_forwarder_info` (so code built against `rc.1` no longer
