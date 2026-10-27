@@ -337,6 +337,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "anomapay_link_witness"
+version = "2.0.0-rc.3"
+dependencies = [
+ "alloy-sol-types",
+ "anoma-rm-risc0",
+ "anoma-rm-risc0-gadgets",
+ "serde",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
