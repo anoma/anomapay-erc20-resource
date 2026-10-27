@@ -46,6 +46,4 @@ the guest.
 cargo test -p transfer_library
 ```
 
-See the [workspace README](../README.md) for the full picture and
-[`transfer_library_v2`](../transfer_library_v2) for the migration-capable
-version.
+See the [workspace README](../README.md) for the full picture.

@@ -10,11 +10,8 @@ extracted from the AnomaPay backend into a standalone workspace so the proving
 artifacts (guest ELFs, `ImageID`s, and the Rust APIs around them) can be
 versioned and reused independently of the backend services that consume them.
 
-There are two generations of the resource:
-
-- **v1** — the original token-transfer resource (wrap / unwrap / transfer).
-- **v2** — adds **migration** support (migrating a v1 resource to v2) on top of
-  the v1 capabilities.
+This line holds the original token-transfer resource (wrap / unwrap / transfer),
+the v1 resource.
 
 ## Layout
 
@@ -26,21 +23,14 @@ not share the host workspace's lockfile or profile.
 ```
 .
 ├── transfer_witness/        # v1 witness data + resource-logic constraints
-├── transfer_witness_v2/     # v2 witness data (depends on v1)
 ├── transfer_library/        # v1 host API: TransferLogic, guest ELF + ImageID
-├── transfer_library_v2/     # v2 host API: TransferLogicV2 + migration tx builder
-├── transfer_circuit/        # v1 RISC Zero guest program  (excluded workspace)
-└── transfer_circuit_v2/     # v2 RISC Zero guest program  (excluded workspace)
+└── transfer_circuit/        # v1 RISC Zero guest program  (excluded workspace)
 ```
 
 ### Dependency graph
 
 ```
-transfer_witness ─────────────┬─────────────► transfer_library ───► transfer_circuit
-        ▲                      │                      ▲                     │
-        │                      │                      │                     │ (path deps,
-        └── transfer_witness_v2 ──► transfer_library_v2 ──► transfer_circuit_v2
-                                                            (guest embeds the library ELF)
+transfer_witness ───► transfer_library ───► transfer_circuit   (path deps)
 ```
 
 - `transfer_witness` is the leaf; everything else builds on it.
@@ -61,12 +51,6 @@ that the guest executes, plus the Solidity-ABI (`alloy-sol-types`) encoding for
 the EVM forwarder `Wrap`/`Unwrap` calldata. Authorization domain:
 `TokenTransferAuthorization`.
 
-### `transfer_witness_v2`
-`TokenTransferWitnessV2` — the v2 witness, reusing the shared v1 building blocks
-(`EncryptionInfo`, `LabelInfo`, `ValueInfo`, `PermitInfo`, …) and adding
-`ForwarderInfoV2` with `MigrateInfo` to support migrating a v1 resource to v2.
-Authorization domain: `TokenTransferAuthorizationV2`.
-
 ### `transfer_library`
 Host-side API for v1 proving. `TransferLogic` wraps a witness and constructs
 resource-logic proofs. Exposes:
@@ -75,16 +59,10 @@ resource-logic proofs. Exposes:
 - `TOKEN_TRANSFER_ID` — the guest `ImageID` (a `Digest`) used for verification
   on- and off-chain.
 
-### `transfer_library_v2`
-v2 host-side API. `TransferLogicV2` plus `migrate_tx::construct_migrate_tx`,
-which assembles a complete ARM `Transaction` (compliance units, logic proofs,
-delta proof) that migrates a v1 resource to v2. Exposes `TOKEN_TRANSFER_V2_ELF`
-and `TOKEN_TRANSFER_V2_ID` (`elf/token-transfer-guest-v2.bin`).
-
-### `transfer_circuit` / `transfer_circuit_v2`
-The RISC Zero guest programs (`token-transfer` / `token-transfer-v2`). Each
-`methods/guest` main simply reads a witness, runs `witness.constrain()`, and
-commits the resulting `LogicInstance`:
+### `transfer_circuit`
+The RISC Zero guest program (`token-transfer`). Its `methods/guest` main
+simply reads a witness, runs `witness.constrain()`, and commits the resulting
+`LogicInstance`:
 
 ```rust
 let witness: TokenTransferWitness = env::read();
@@ -92,13 +70,13 @@ let instance = witness.constrain().unwrap();
 env::commit(&instance);
 ```
 
-Their integration tests (`src/test.rs`) exercise wrap/unwrap/transfer (and, for
-v2, migration) end to end. See each crate's `README.md` for how to reproducibly
-build the ELF and `ImageID` with `cargo risczero build`.
+Its integration tests (`src/test.rs`) exercise wrap/unwrap/transfer end to end.
+See its `README.md` for how to reproducibly build the ELF and `ImageID` with
+`cargo risczero build`.
 
 ## The guest ELF / `ImageID` model
 
-`TOKEN_TRANSFER_ID` (and `TOKEN_TRANSFER_V2_ID`) is the `ImageID` of a **specific
+`TOKEN_TRANSFER_ID` is the `ImageID` of a **specific
 committed build** of the guest ELF — not necessarily of a fresh
 `cargo risczero build` at HEAD. The `ImageID` is a digest over the entire
 compiled guest, so it changes whenever *any* transitive input changes
@@ -124,11 +102,10 @@ Requires the toolchain pinned in [`rust-toolchain.toml`](rust-toolchain.toml)
 cargo build --workspace --all-targets
 cargo test  --workspace
 
-# Each circuit is a separate workspace — build/test from its own directory.
+# The circuit is a separate workspace — build/test it from its own directory.
 # RISC0_DEV_MODE=1 skips real proving so tests run fast (dev/CI only — it does
 # NOT produce verifiable proofs).
 cd transfer_circuit    && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
-cd transfer_circuit_v2 && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
 ```
 
 > The dev profile sets `opt-level = 3` for the whole workspace: running an
@@ -139,11 +116,11 @@ cd transfer_circuit_v2 && RISC0_DEV_MODE=1 cargo test -- --nocapture && cd ..
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on pushes to `main`
 and on pull requests:
 
-- **Format** — `cargo fmt --all --check` for the workspace and each circuit
+- **Format** — `cargo fmt --all --check` for the workspace and the circuit
   (`rustfmt` `style_edition = "2024"`), plus `taplo fmt --check` for all
   `Cargo.toml`s.
 - **Build & test** — `cargo build --workspace --all-targets`,
-  `cargo test --workspace`, and a build + `RISC0_DEV_MODE=1` test of each
+  `cargo test --workspace`, and a build + `RISC0_DEV_MODE=1` test of the
   circuit.
 
 ## Audits
@@ -162,9 +139,9 @@ Our software undergoes regular audits:
 
 ## Versioning
 
-The workspace crates (`transfer_witness*`, `transfer_library*`) share the
-version in `[workspace.package]` (currently `2.0.0`). The circuit crates are
-versioned independently (currently `2.0.0`).
+The workspace crates (`transfer_witness`, `transfer_library`) share the
+version in `[workspace.package]` (currently `3.0.0-rc.2`). The circuit crate
+is versioned independently (currently `2.0.0`).
 
 ## License
 

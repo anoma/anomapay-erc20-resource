@@ -30,10 +30,6 @@ jobs:
         working-directory: transfer_circuit
         run: cargo fmt --all --check
 
-      - name: cargo fmt (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
-        run: cargo fmt --all --check
-
       - name: Install taplo
         uses: taiki-e/install-action@v2
         with:
@@ -58,7 +54,6 @@ jobs:
           workspaces: |
             .
             transfer_circuit
-            transfer_circuit_v2
 
       - name: cargo build (workspace)
         run: cargo build --workspace --all-targets
@@ -74,16 +69,6 @@ jobs:
 
       - name: cargo test (transfer_circuit)
         working-directory: transfer_circuit
-        run: cargo test -- --nocapture
-        env:
-          RISC0_DEV_MODE: "1"
-
-      - name: cargo build (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
-        run: cargo build --all-targets
-
-      - name: cargo test (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
         run: cargo test -- --nocapture
         env:
           RISC0_DEV_MODE: "1"
@@ -105,15 +90,10 @@ jobs:
           workspaces: |
             .
             transfer_circuit
-            transfer_circuit_v2
 
       - name: cargo clippy (workspace)
         run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: cargo clippy (transfer_circuit)
         working-directory: transfer_circuit
-        run: cargo clippy --all-targets -- -D warnings
-
-      - name: cargo clippy (transfer_circuit_v2)
-        working-directory: transfer_circuit_v2
         run: cargo clippy --all-targets -- -D warnings
