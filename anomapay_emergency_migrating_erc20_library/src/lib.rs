@@ -30,7 +30,7 @@ pub const ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ELF: &[u8] =
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
     pub static ref ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID: Digest =
-        Digest::from_hex("1742014631fc2c0bf1433d1ae909358af682df1e7c98d38ef15fb8c8f58709a2")
+        Digest::from_hex("60931f86d307c92ac22b710fd943811378ff12f249d068028c54d8faf00677c6")
             .unwrap();
 }
 

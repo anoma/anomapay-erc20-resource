@@ -38,8 +38,8 @@ branches on the resource kind and enforces the corresponding rules:
 - **Created persistent resource** → validates the label, encrypts the resource
   payload for the recipient, and emits the resource + discovery ciphertexts.
 
-It returns the `LogicInstance` (tag, `is_consumed`, root, app data) the guest
-commits.
+It returns the `LogicInstance` (tag, `is_consumed`, `action_tree_root`, app
+data) the guest commits.
 
 ### Solidity ABI encoding ([`call_type.rs`](src/call_type.rs))
 `CallType` (`Wrap`/`Unwrap`) plus `encode_wrap_forwarder_input` /

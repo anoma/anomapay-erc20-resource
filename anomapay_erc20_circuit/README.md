@@ -14,17 +14,20 @@ which reproduces:
 
 ```bash
 ELFs ready at:
-ImageID: 59eea0bc111b9d18b53bdc49e20d2fbc0c1c89e59782ed546b99b9da4e53da16
+ImageID: 9c7f5feab5f4dc239b5caf180f633e4eac94b5ba6504029abee8d49541f4e026
 anomapay_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-erc20-circuit-guest.bin
 ```
 
 The same value is also embedded as the committed guest binary at `anomapay_erc20_library/elf/anomapay-erc20-circuit-guest.bin` in this repo.
 
-It was last rotated for the `2.0.0-rc.3` release: the `anoma-rm-risc0` /
-`anoma-rm-risc0-gadgets` bump to `2.0.0-rc.8` reverted the `afterTags` /
-`beforeTags` ordering fields on `ForwarderCalldata`, dropping the witness-side
-`OrderingInfo` with them — both change the ABI-encoded forwarder calldata the
-guest commits to, and the witness layout the guest deserializes.
+It was last rotated for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
+`anoma-rm-risc0-gadgets` bump to `2.0.0-rc.8.1` renamed `LogicInstance::root` to
+`action_tree_root`. That rename does not change the journal the guest commits —
+the field order and encoding are identical — but the ARM upgrade re-links the
+guest, so the `ImageID` moves regardless. The same release also rotated ARM's own
+verifying keys (`COMPLIANCE_VK`, `PADDING_LOGIC_VK`, `BATCH_AGGREGATION_VK`,
+`BATCH_AGGREGATION_EVM_VK`), which the protocol adapter has to be redeployed
+against alongside this `ImageID`.
 
 ## ImageID drift after future changes
 
