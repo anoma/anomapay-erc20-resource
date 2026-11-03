@@ -4,6 +4,8 @@ Resource logics and zero-knowledge circuits for the **AnomaPay ERC20 transfer
 resource**, targeting the [Anoma Resource Machine (ARM)](https://anoma.net) on
 the [RISC Zero](https://dev.risczero.com) zkVM.
 
+The [documentation](./docs/README.md) specifies the resource logics: what they check, what they leave unchecked, and why.
+
 This repository packages the witness types, resource-logic library, and RISC
 Zero guest programs that prove the validity of token-transfer resources. It was
 extracted from the AnomaPay backend into a standalone workspace so the proving
