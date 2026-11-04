@@ -23,6 +23,9 @@ A unit of state with a quantity. A **persistent** resource stays until a later t
 **Tag / Commitment / Nullifier**:
 The tag of a resource in a transaction is its nullifier if the transaction consumes it, else its commitment. Only a holder of the nullifier key of a resource can calculate its nullifier.
 
+**Commitment tree**:
+The Merkle tree of the commitments of all resources, which the protocol adapter keeps. A **historical root** is a root of the commitment tree that the protocol adapter stores.
+
 **Resource logic / Logic ref**:
 The circuit that decides when a transaction can create or consume a resource. Its logic ref identifies its code.
 
@@ -44,6 +47,9 @@ The encryption of a created persistent ERC20 resource, its forwarder address and
 **Discovery payload**:
 A ciphertext for the discovery key of the owner of a created persistent ERC20 resource. With fuzzy message detection, an indexer uses it to find the resources of a user faster. The logic does not check it.
 
+**App data / Deletion criterion**:
+The app data of a resource holds four lists of blobs: the resource payload, the discovery payload, the external payload and the application payload. The deletion criterion of a blob is `Never` or `Immediately`. The protocol adapter emits each blob with `Never` as an event. Each blob of the external payload is an external call, whatever its deletion criterion.
+
 **External payload / External call**:
 The app data of a resource that carries calls to forwarders. The protocol adapter makes each external call when it processes the resource.
 
@@ -62,8 +68,24 @@ The contract that verifies transactions on an EVM chain and makes the external c
 **Hard migration / Trigger**:
 The process in which users replace their unspent resources of a denied logic ref with resources of a new logic ref. The trigger is the consumed ephemeral resource whose migrate call lists the old resources. The code calls it emergency migration.
 
+**Logic ref denylist**:
+Two lists of logic refs that the protocol adapter keeps, one for created resources and one for consumed resources. To _deprecate_ a logic ref, the owner of the protocol adapter adds it to the list for created resources, so transactions can consume its resources but not create them. To _deny_ it, the owner adds it to both lists.
+
+**Soft migration**:
+The process in which users convert their ERC20 resources of a deprecated logic ref into ERC20 resources of the logic ref that the ERC20 forwarder accepts, through aliases of a kind tree.
+_Avoid_: migration (on its own)
+
+**Legacy protocol adapter / Galileo upgrade**:
+The legacy protocol adapter is the immutable protocol adapter that a chain used before the Galileo upgrade. The Galileo upgrade replaces it with the protocol adapter, once for each chain.
+
 **Legacy ERC20 forwarder / Legacy-forwarder resource**:
 The immutable ERC20 forwarder of the legacy protocol adapter, and an ERC20 resource whose label ref names it.
+
+**Kind / Kind point / Kind tree**:
+The kind of a resource is the hash to curve of its logic ref and its label ref. Its kind point is the point that the compliance circuit multiplies by its quantity: the kind, or the point that a kind tree gives the kind. A kind tree is a Merkle tree of entries, each of which gives a kind a kind point. Two kinds with the same kind point are **aliases**, so their resources balance against each other.
+
+**Compliance unit / Aggregation proof / Delta proof**:
+Each action has one compliance unit. Its compliance proof shows the **compliance checks**: the in-circuit checks that the action follows the rules of the ARM. The aggregation proof aggregates the compliance proofs and the resource logic proofs of a transaction into one proof, so the protocol adapter verifies only the aggregation proof and the delta proof. The delta proof shows that a transaction balances: for each kind point, the consumed and the created quantities are equal.
 
 **In-circuit check**:
 A check that a circuit makes: a proof of the circuit is valid only if the check holds.
