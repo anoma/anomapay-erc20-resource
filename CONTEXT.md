@@ -81,11 +81,12 @@ The legacy protocol adapter is the immutable protocol adapter that a chain used 
 **Legacy ERC20 forwarder / Legacy-forwarder resource**:
 The immutable ERC20 forwarder of the legacy protocol adapter, and an ERC20 resource whose label ref names it.
 
-**Kind / Kind point / Kind tree**:
-The kind of a resource is the hash to curve of its logic ref and its label ref. Its kind point is the point that the compliance circuit multiplies by its quantity: the kind, or the point that a kind tree gives the kind. A kind tree is a Merkle tree of entries, each of which gives a kind a kind point. Two kinds with the same kind point are **aliases**, so their resources balance against each other.
+**Kind / Kind base / Kind tree**:
+The kind of a resource is the hash to curve of its logic ref and its label ref. Its kind base is the point that the compliance circuit multiplies by its quantity: the kind, or the point that a kind tree gives the kind. A kind tree is a Merkle tree of entries, each of which gives a kind a kind base. Two kinds with the same kind base are **aliases**, so their resources balance against each other.
+_Avoid_: kind point
 
 **Compliance unit / Aggregation proof / Delta proof**:
-Each action has one compliance unit. Its compliance proof shows the **compliance checks**: the in-circuit checks that the action follows the rules of the ARM. The aggregation proof aggregates the compliance proofs and the resource logic proofs of a transaction into one proof, so the protocol adapter verifies only the aggregation proof and the delta proof. The delta proof shows that a transaction balances: for each kind point, the consumed and the created quantities are equal.
+Each action has one compliance unit. Its compliance proof shows the **compliance checks**: the in-circuit checks that the action follows the rules of the ARM. The aggregation proof aggregates the compliance proofs and the resource logic proofs of a transaction into one proof, so the protocol adapter verifies only the aggregation proof and the delta proof. The delta proof shows that a transaction balances: for each kind base, the consumed and the created quantities are equal.
 
 **In-circuit check**:
 A check that a circuit makes: a proof of the circuit is valid only if the check holds.

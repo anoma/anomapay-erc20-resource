@@ -77,7 +77,7 @@ In-circuit checks:
 
 The logic checks no quantity, and no address beyond the label ref and the receiver of an unwrap. These checks cover the rest:
 
-- **The compliance proof** calculates the commitment, the nullifier and the delta of each resource, and it checks the nonces of the created resources. The delta proof shows that the quantities balance for each kind point.
+- **The compliance proof** calculates the commitment, the nullifier and the delta of each resource, and it checks the nonces of the created resources. The delta proof shows that the quantities balance for each kind base.
 - **The kind** follows from the logic ref and the label ref. So ERC20 resources of another forwarder or another token have another kind, and they balance with these resources only through an alias of a kind tree.
 - **The protocol adapter** rejects a repeated nullifier and a root that is not historical, and it makes the external calls.
 - **The ERC20 forwarder** accepts calls only from its protocol adapter and only with its logic ref. Its balance check requires that exactly the quantity moves.
