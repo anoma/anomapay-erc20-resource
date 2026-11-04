@@ -8,6 +8,7 @@ members = [
   "anomapay_emergency_migrating_erc20_witness",
   "anomapay_erc20_library",
   "anomapay_emergency_migrating_erc20_library",
+  "anomapay_link_witness",
 ]
 resolver = "3"
 
