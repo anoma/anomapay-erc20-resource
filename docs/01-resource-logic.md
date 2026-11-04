@@ -86,7 +86,7 @@ The logic checks no quantity, and no address beyond the label ref and the receiv
 ## 7. Trust assumptions
 
 - **The owner keeps its keys secret.** A transaction that consumes a persistent ERC20 resource needs its nullifier key and a signature with its authorization key.
-- **Only resources of the ERC20 forwarder are backed.** The logic accepts any forwarder address. A contract that acts as a forwarder can accept a wrap without taking tokens. Its resources have their own kind, so they cannot unwrap tokens of the ERC20 forwarder unless a kind tree makes their kinds aliases.
+- **No kind tree makes aliases across forwarders.** The logic accepts any forwarder address, so a contract that acts as a forwarder can accept a wrap without taking tokens. Its resources have their own kind, so they cannot unwrap tokens of the ERC20 forwarder unless a kind tree makes their kinds aliases.
 
 ## 8. Parameters
 

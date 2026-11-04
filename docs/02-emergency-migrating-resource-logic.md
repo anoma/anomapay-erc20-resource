@@ -37,10 +37,11 @@ So the proof shows that the owner knows the keys of the old resources and signs 
 | The forwarder address of each old resource                                             | The forwarder accepts only its own address and the address of the legacy ERC20 forwarder.                                                                           |
 | Several owners in one batch                                                            | One signature authorizes the whole batch, so all old resources must have one authorization key. A user with resources of several keys makes one batch for each key. |
 
+A flaw can forge old resources, and the state cannot show the difference between forged and correct ones. So forged old resources can also migrate.
+
 ## 3. Trust assumptions
 
 - **The forwarder makes the state checks.** Without them, a prover could migrate a resource that does not exist, or one that a transaction consumed.
-- **A flaw can forge old resources.** The state cannot show the difference between forged and correct old resources, so forged ones can also migrate.
 
 ## 4. Parameters
 
