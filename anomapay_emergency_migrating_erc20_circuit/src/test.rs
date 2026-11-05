@@ -7,6 +7,7 @@ use anoma_rm_risc0_gadgets::{
     encryption::{SecretKey, generate_public_key},
 };
 use anomapay_emergency_migrating_erc20_library::EmergencyMigratingTransferLogic;
+use anomapay_emergency_migrating_erc20_witness::calculate_migrate_value_ref;
 use anomapay_erc20_library::TransferLogic;
 use anomapay_erc20_witness::{
     ValueInfo, calculate_label_ref, calculate_persistent_value_ref,
@@ -109,13 +110,18 @@ fn create_migrate_resource_logic() -> EmergencyMigratingTransferLogic {
     // mock a legacy resource to be migrated
     let legacy_resource = create_legacy_persistent_resource();
 
-    // create the ephemeral resource to migrate the legacy_resource
-    let self_resource = create_ephemeral_resource();
-
     // It should be the real root in practice
     let action_tree_root = Digest::default();
 
     let nf_key = NullifierKey::from_bytes(NF_KEY_BYTES);
+
+    // create the ephemeral resource to migrate the legacy_resource; its value_ref
+    // commits to the nullifier of the migrated legacy resource
+    let legacy_nf = legacy_resource.nullifier(&nf_key).unwrap();
+    let self_resource = Resource {
+        value_ref: calculate_migrate_value_ref(&[legacy_nf]),
+        ..create_ephemeral_resource()
+    };
 
     let auth_sk = AuthoritySigningKey::from_bytes(&AUTH_SK).unwrap();
     let auth_pk = AuthorityVerifyingKey::from_signing_key(&auth_sk);
@@ -298,10 +304,6 @@ fn create_migrate_resource_logic_batch(count: u8) -> EmergencyMigratingTransferL
     let action_tree_root = Digest::default();
     let per_entry_quantity = QUANTITY / count as u128;
 
-    let self_resource = Resource {
-        quantity: per_entry_quantity * count as u128,
-        ..create_ephemeral_resource()
-    };
     let self_nf_key = NullifierKey::from_bytes(NF_KEY_BYTES);
 
     // All entries share the same auth_pk, since the batch is authorized by a
@@ -345,7 +347,19 @@ fn create_migrate_resource_logic_batch(count: u8) -> EmergencyMigratingTransferL
                 forwarder_addr: legacy_forwarder_addr,
             }
         })
+        .collect::<Vec<_>>();
+
+    // The trigger resource's value_ref commits to the nullifiers of every
+    // migrated resource, in batch order.
+    let migrate_nfs: Vec<Digest> = entries
+        .iter()
+        .map(|entry| entry.resource.nullifier(&entry.nf_key).unwrap())
         .collect();
+    let self_resource = Resource {
+        quantity: per_entry_quantity * count as u128,
+        value_ref: calculate_migrate_value_ref(&migrate_nfs),
+        ..create_ephemeral_resource()
+    };
 
     EmergencyMigratingTransferLogic::migrate_resource_logic(
         self_resource,
@@ -398,6 +412,31 @@ fn test_negative_migration_with_empty_batch() {
         .unwrap()
         .entries
         .clear();
+    resource_logic.prove(ProofType::Succinct).unwrap_err();
+}
+
+#[test]
+fn test_negative_migration_with_wrong_value_ref_in_self_resource() {
+    use anoma_rm_risc0::proving_system::ProofType;
+
+    // A value_ref that does not commit to the migrated nullifiers
+    let mut resource_logic = create_migrate_resource_logic();
+    resource_logic.witness.resource.value_ref = Digest::from([10u8; 32]);
+    resource_logic.prove(ProofType::Succinct).unwrap_err();
+
+    // A value_ref committing to only part of the batch
+    let mut resource_logic = create_migrate_resource_logic_batch(2);
+    let first_entry = &resource_logic
+        .witness
+        .emergency_migrating_forwarder_info
+        .as_ref()
+        .unwrap()
+        .migrate_info
+        .as_ref()
+        .unwrap()
+        .entries[0];
+    let first_nf = first_entry.resource.nullifier(&first_entry.nf_key).unwrap();
+    resource_logic.witness.resource.value_ref = calculate_migrate_value_ref(&[first_nf]);
     resource_logic.prove(ProofType::Succinct).unwrap_err();
 }
 

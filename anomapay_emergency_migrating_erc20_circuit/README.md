@@ -9,7 +9,7 @@ which reproduces the `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID` committed i
 
 ```bash
 ELFs ready at:
-ImageID: 60931f86d307c92ac22b710fd943811378ff12f249d068028c54d8faf00677c6
+ImageID: 839562623aeded19b3fab64cf9948f9de70af8a54d9f03e86e9145226f2541e4
 anomapay_emergency_migrating_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-emergency-migrating-erc20-circuit-guest.bin
 ```
 
@@ -18,7 +18,12 @@ The same value is also embedded as the committed guest binary at
 in this repo. See [`anomapay_erc20_circuit/README.md`](../anomapay_erc20_circuit/README.md) for why
 and when this `ImageID` can drift from a fresh build, and how to rotate it.
 
-It was last rotated for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
+It was last rotated when the `Migrate` constraint started binding the trigger
+resource's `value_ref` to the hash of the migrated nullifiers. That changes the
+guest's logic, so the `ImageID` moves, and the protocol adapter has to be
+redeployed against the new value.
+
+The rotation before that was for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
 `anoma-rm-risc0-gadgets` bump to `2.0.0-rc.8.1` renamed `LogicInstance::root` to
 `action_tree_root`. That rename does not change the journal the guest commits —
 the field order and encoding are identical — but the ARM upgrade re-links the
