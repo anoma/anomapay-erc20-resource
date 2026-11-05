@@ -5,7 +5,7 @@ name = "anomapay-erc20-circuit-methods"
 version = "2.0.0"
 
 [build-dependencies]
-risc0-build = { version = "3.0.3", features = ["unstable"] }
+risc0-build = { version = "3.0.7-rc.1", features = ["unstable"] }
 
 [package.metadata.risc0]
 methods = ["guest"]
