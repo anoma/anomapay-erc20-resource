@@ -23,3 +23,7 @@ k256 = { workspace = true, features = [
 ], default-features = false }
 lazy_static = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+
+[features]
+# Prove on an NVIDIA GPU. Requires the CUDA toolkit (nvcc) at build time.
+cuda = ["anoma-rm-risc0/cuda"]
