@@ -55,6 +55,9 @@ enforces (in [`src/lib.rs`](src/lib.rs)):
   `TokenTransferAuthorizationEmergencyMigrating`;
 - each entry's `label_ref` matches `sha2(legacy_forwarder_addr, erc20_token_addr)`;
 - the entries' quantities sum (without overflow) to the trigger resource's quantity;
+- the trigger resource's `value_ref` equals `calculate_migrate_value_ref` of the
+  entries' nullifiers: `sha2(nf_0 || nf_1 || …)` in batch order, which binds the
+  trigger to exactly this batch;
 
 then it derives each migrated resource's nullifier and Merkle root and emits the
 batched `Migrate` forwarder calldata as the external payload.

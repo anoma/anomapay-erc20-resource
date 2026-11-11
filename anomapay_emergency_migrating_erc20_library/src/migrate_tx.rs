@@ -94,7 +94,6 @@ pub fn construct_migrate_tx(
 }
 
 #[test]
-#[cfg(not(target_os = "macos"))]
 fn simple_migrate_test() {
     use anoma_rm_risc0::{
         compliance::INITIAL_ROOT,
@@ -109,7 +108,9 @@ fn simple_migrate_test() {
         authority::{AuthoritySigningKey, AuthorityVerifyingKey},
         encryption::random_keypair,
     };
-    use anomapay_emergency_migrating_erc20_witness::EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN;
+    use anomapay_emergency_migrating_erc20_witness::{
+        EMERGENCY_MIGRATING_AUTH_SIGNATURE_DOMAIN, calculate_migrate_value_ref,
+    };
     use anomapay_erc20_witness::ValueInfo;
     use anomapay_erc20_witness::{calculate_label_ref, calculate_persistent_value_ref};
 
@@ -180,11 +181,17 @@ fn simple_migrate_test() {
     }
     let total_quantity = quantity_a + quantity_b;
 
-    // Construct the consumed resource
+    // Construct the consumed resource, whose value_ref commits to the
+    // nullifiers of every migrated resource, in batch order.
+    let migrate_nfs: Vec<Digest> = migrate_entries
+        .iter()
+        .map(|entry| entry.resource.nullifier(&entry.nf_key).unwrap())
+        .collect();
     let (consumed_nf_key, consumed_nf_cm) = nullifier_key::random_pair();
     let consumed_resource = Resource {
         logic_ref: EmergencyMigratingTransferLogic::verifying_key(),
         label_ref: label_ref_v2,
+        value_ref: calculate_migrate_value_ref(&migrate_nfs),
         nk_commitment: consumed_nf_cm,
         quantity: total_quantity,
         is_ephemeral: true,

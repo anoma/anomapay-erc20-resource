@@ -21,7 +21,9 @@ mirrors `TransferLogic`'s constructors —
   `MigrateInfo` describing the **batch** of legacy resources being migrated — one
   `MigrateEntryParams` per resource (its resource, nullifier key, Merkle path, auth
   and encryption keys, and the legacy forwarder address, which may differ per entry)
-  and a single authorization signature over the `auth_pk` they all share.
+  and a single authorization signature over the `auth_pk` they all share. The
+  trigger resource's `value_ref` must be `calculate_migrate_value_ref` of the
+  entries' nullifiers, in the same order as the entries.
 
 ### `migrate_tx::construct_migrate_tx` ([`src/migrate_tx.rs`](src/migrate_tx.rs))
 Assembles a complete, balanced ARM `Transaction` that migrates a batch of legacy

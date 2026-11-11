@@ -24,6 +24,7 @@ The witness of a trigger holds a batch of old resources, and for each one its nu
 - The label ref of each old resource is the SHA-256 hash of the forwarder address of its entry and the token address of the trigger.
 - The circuit calculates the commitment of each old resource, its commitment tree root from the Merkle path, and its nullifier from the nullifier key, which must match the commitment to the nullifier key.
 - The quantities of the old resources add up to the quantity of the trigger, without overflow.
+- The value ref of the trigger is the SHA-256 hash of the nullifiers of the old resources, concatenated in batch order. So the trigger commits to exactly this batch.
 - One authorization signature over the action tree root verifies with the authorization key of the batch.
 - The external payload has one blob: a call to the forwarder with the call type `Migrate`, the token, the total quantity and one `MigrateEntry` for each old resource, and an empty expected output, with the deletion criterion `Immediately`. Each entry holds the nullifier, the commitment tree root, the logic ref and the forwarder address of one old resource.
 

@@ -13,7 +13,7 @@ use anoma_rm_risc0::{
     merkle_path::MerklePath,
     nullifier_key::NullifierKey,
     resource::Resource,
-    utils::bytes_to_words,
+    utils::{bytes_to_words, hash_bytes},
 };
 use anoma_rm_risc0_gadgets::{
     authority::AuthoritySignature, encryption::Ciphertext, evm::ForwarderCalldata,
@@ -216,6 +216,7 @@ impl EmergencyMigratingTokenTransferWitness {
 
                 let mut total_quantity: u128 = 0;
                 let mut batch_entries = Vec::with_capacity(migrate_info.entries.len());
+                let mut migrate_nfs = Vec::with_capacity(migrate_info.entries.len());
 
                 for entry in &migrate_info.entries {
                     // compute migrate resource commitment tree root
@@ -249,6 +250,7 @@ impl EmergencyMigratingTokenTransferWitness {
                     let migrate_nf = entry
                         .resource
                         .nullifier_from_commitment(&entry.nf_key, &migrate_cm)?;
+                    migrate_nfs.push(migrate_nf);
 
                     // check migrate_resource label_ref_v1
                     let migrate_label_ref_v1 =
@@ -271,6 +273,14 @@ impl EmergencyMigratingTokenTransferWitness {
                         logic_ref: entry.resource.logic_ref.as_bytes().to_vec(),
                         forwarder_addr: entry.forwarder_addr.clone(),
                     });
+                }
+
+                // check the trigger resource's value_ref commits to the migrated
+                // nullifiers, binding the trigger resource to this exact batch
+                if self.resource.value_ref != calculate_migrate_value_ref(&migrate_nfs) {
+                    return Err(ArmError::ProveFailed(
+                        "Invalid migrate trigger resource value_ref".to_string(),
+                    ));
                 }
 
                 // check total migrated quantity matches the trigger resource's quantity
@@ -470,4 +480,14 @@ impl EmergencyMigratingTokenTransferWitness {
             value_info,
         }
     }
+}
+
+/// Calculate the value_ref of a migrate trigger resource: the hash of the
+/// nullifiers of all migrated resources, concatenated in batch order.
+pub fn calculate_migrate_value_ref(migrate_nullifiers: &[Digest]) -> Digest {
+    let bytes: Vec<u8> = migrate_nullifiers
+        .iter()
+        .flat_map(|nf| nf.as_bytes().iter().copied())
+        .collect();
+    hash_bytes(&bytes)
 }
