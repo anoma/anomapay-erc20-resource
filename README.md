@@ -170,10 +170,19 @@ Our software undergoes regular audits:
 ## Versioning
 
 The workspace crates (`anomapay_erc20_witness`, `anomapay_emergency_migrating_erc20_witness`, `anomapay_erc20_library`, `anomapay_emergency_migrating_erc20_library`) share the
-version in `[workspace.package]` (currently `2.0.0-rc.4`). The circuit crates are
+version in `[workspace.package]` (currently `2.0.0-rc.5`). The circuit crates are
 versioned independently (currently `2.0.0`).
 
-`rc.4` tracks the ARM dependency bump to `2.0.0-rc.8.1`, which renamed
+`rc.5` tracks the ARM dependency bump to `2.0.0-rc.9`, which moved RISC Zero to
+`3.1.0` (`risc0-zkvm` `3.1.0`, `risc0-build` `3.0.7`). The public API of the
+workspace crates is unchanged. Both guest `ImageID`s were rotated, because the
+toolchain and ARM upgrade re-link the guest. RISC Zero `3.1.0` changes the proof
+circuits and control root, so proofs made with earlier versions do not verify
+against the new verifiers: regenerate them and redeploy the protocol adapter.
+`rc.5` also includes the emergency-migrating `Migrate` change that binds the
+trigger resource's `value_ref` to the migrated nullifiers.
+
+`rc.4` tracked the ARM dependency bump to `2.0.0-rc.8.1`, which renamed
 `LogicInstance::root` to `action_tree_root`. The rename is source-breaking for
 anything that constructs a `LogicInstance` literal, but the committed journal
 layout is unchanged — only the field's name moved. Both guest `ImageID`s were

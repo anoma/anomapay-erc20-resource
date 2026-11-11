@@ -14,20 +14,24 @@ which reproduces:
 
 ```bash
 ELFs ready at:
-ImageID: 9c7f5feab5f4dc239b5caf180f633e4eac94b5ba6504029abee8d49541f4e026
+ImageID: 4cdafa97cacb54dc8ea04a8bac82d3890afb195b787741446911a96351fb15b6
 anomapay_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-erc20-circuit-guest.bin
 ```
 
 The same value is also embedded as the committed guest binary at `anomapay_erc20_library/elf/anomapay-erc20-circuit-guest.bin` in this repo.
 
-It was last rotated for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
+It was last rotated for the `2.0.0-rc.5` release: the `anoma-rm-risc0` /
+`anoma-rm-risc0-gadgets` bump to `2.0.0-rc.9` moved RISC Zero to `3.1.0`
+(`risc0-zkvm` `3.1.0`, `risc0-build` `3.0.7`). The resource logic is unchanged,
+but the toolchain and ARM upgrade re-link the guest, so the `ImageID` moves.
+RISC Zero `3.1.0` also changes the proof circuits and control root, so receipts
+produced by earlier versions must be regenerated, and the deployed verifiers
+updated. ARM `2.0.0-rc.9` rotated its own verifying keys too, which the protocol
+adapter has to be redeployed against alongside this `ImageID`.
+
+The rotation before that was for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
 `anoma-rm-risc0-gadgets` bump to `2.0.0-rc.8.1` renamed `LogicInstance::root` to
-`action_tree_root`. That rename does not change the journal the guest commits —
-the field order and encoding are identical — but the ARM upgrade re-links the
-guest, so the `ImageID` moves regardless. The same release also rotated ARM's own
-verifying keys (`COMPLIANCE_VK`, `PADDING_LOGIC_VK`, `BATCH_AGGREGATION_VK`,
-`BATCH_AGGREGATION_EVM_VK`), which the protocol adapter has to be redeployed
-against alongside this `ImageID`.
+`action_tree_root`, which re-linked the guest without changing its journal.
 
 ## ImageID drift after future changes
 
@@ -64,5 +68,5 @@ If you need the two values to agree (e.g., before a release that does change cir
 Note: The unstable feature of risc0-zkvm currently causes issues in circuits. This can be temporarily fixed by manually updating the tool. The problem will be fully resolved in the next release of RISC Zero.
 
 ```bash
-cargo install --force --git https://github.com/risc0/risc0 --tag v3.0.3 -Fexperimental cargo-risczero
+cargo install --force --git https://github.com/risc0/risc0 --tag v3.1.0 -Fexperimental cargo-risczero
 ```
