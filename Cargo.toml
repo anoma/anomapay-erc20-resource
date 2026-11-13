@@ -23,7 +23,7 @@ lazy_static = "1.5.0"
 rand = "0.9.2"
 serde = { version = "1.0", features = ["derive"] }
 transfer_library = { path = "transfer_library" }
-transfer_witness = { path = "transfer_witness" }
+transfer_witness = { version = "=3.0.0-rc.2.1", path = "transfer_witness" }
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
