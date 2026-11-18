@@ -14,13 +14,15 @@ which reproduces:
 
 ```bash
 ELFs ready at:
-ImageID: 4cdafa97cacb54dc8ea04a8bac82d3890afb195b787741446911a96351fb15b6
+ImageID: 47dd3f7e3cfd691bb94d3c4dc85b2ce3a2fe3358be32e2ae486a68a13769c708
 anomapay_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-erc20-circuit-guest.bin
 ```
 
 The same value is also embedded as the committed guest binary at `anomapay_erc20_library/elf/anomapay-erc20-circuit-guest.bin` in this repo.
 
-It was last rotated for the `2.0.0-rc.5` release: the `anoma-rm-risc0` /
+It was last rotated when the forwarder input of a wrap started to carry the Permit2 signature as a `bytes` field of the wrap data, so that a signature of any length fits. This changes the resource logic, so a forwarder must accept the new `ImageID` as its logic ref.
+
+The rotation before that was for the `2.0.0-rc.5` release: the `anoma-rm-risc0` /
 `anoma-rm-risc0-gadgets` bump to `2.0.0-rc.9` moved RISC Zero to `3.1.0`
 (`risc0-zkvm` `3.1.0`, `risc0-build` `3.0.7`). The resource logic is unchanged,
 but the toolchain and ARM upgrade re-link the guest, so the `ImageID` moves.
@@ -29,7 +31,7 @@ produced by earlier versions must be regenerated, and the deployed verifiers
 updated. ARM `2.0.0-rc.9` rotated its own verifying keys too, which the protocol
 adapter has to be redeployed against alongside this `ImageID`.
 
-The rotation before that was for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
+Before that, it was rotated for the `2.0.0-rc.4` release: the `anoma-rm-risc0` /
 `anoma-rm-risc0-gadgets` bump to `2.0.0-rc.8.1` renamed `LogicInstance::root` to
 `action_tree_root`, which re-linked the guest without changing its journal.
 

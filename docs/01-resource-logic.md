@@ -19,7 +19,7 @@ In-circuit checks:
 
 - The label ref is the SHA-256 hash of the forwarder address and the token address of the witness.
 - The call type of the witness is `Wrap`.
-- The external payload has one blob: a call to the forwarder with the input `(Wrap, token, quantity, WrapData)` and an empty expected output, with the deletion criterion `Immediately`. `WrapData` holds the Permit2 nonce and deadline, the owner address, the action tree root of the action, and a signature of 65 bytes.
+- The external payload has one blob: a call to the forwarder with the input `(Wrap, token, quantity, WrapData)` and an empty expected output, with the deletion criterion `Immediately`. `WrapData` holds the Permit2 nonce and deadline, the owner address, the action tree root of the action, and the Permit2 signature, which can have any length.
 - The resource payload and the discovery payload are empty.
 
 | Not checked                                                      | Reason                                                                                                                                                                                                                                                                                       |
