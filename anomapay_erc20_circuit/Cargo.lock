@@ -325,7 +325,7 @@ dependencies = [
  "anoma-rm-risc0-gadgets",
  "bincode",
  "k256",
- "rand 0.10.4",
+ "rand 0.9.2",
  "serde",
 ]
 
