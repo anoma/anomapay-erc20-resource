@@ -25,7 +25,7 @@ witness fields by hand:
 - `ANOMAPAY_ERC20_CIRCUIT_ELF` — the guest binary, embedded via `include_bytes!` from
   [`elf/anomapay-erc20-circuit-guest.bin`](elf/anomapay-erc20-circuit-guest.bin).
 - `ANOMAPAY_ERC20_CIRCUIT_ID` — the guest `ImageID` (a `Digest`,
-  `4cdafa97cacb54dc8ea04a8bac82d3890afb195b787741446911a96351fb15b6`) used to
+  `47dd3f7e3cfd691bb94d3c4dc85b2ce3a2fe3358be32e2ae486a68a13769c708`) used to
   verify proofs on- and off-chain.
 
 > [!IMPORTANT]

@@ -25,7 +25,7 @@ pub const ANOMAPAY_ERC20_CIRCUIT_ELF: &[u8] =
 lazy_static! {
     /// The identity of the binary that executes the proofs in the zkvm.
     pub static ref ANOMAPAY_ERC20_CIRCUIT_ID: Digest =
-        Digest::from_hex("4cdafa97cacb54dc8ea04a8bac82d3890afb195b787741446911a96351fb15b6")
+        Digest::from_hex("47dd3f7e3cfd691bb94d3c4dc85b2ce3a2fe3358be32e2ae486a68a13769c708")
             .unwrap();
 }
 

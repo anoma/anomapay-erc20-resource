@@ -42,7 +42,7 @@ returning a verifiable `Transaction`.
 - `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ELF` — the guest binary, embedded via `include_bytes!`
   from [`elf/anomapay-emergency-migrating-erc20-circuit-guest.bin`](elf/anomapay-emergency-migrating-erc20-circuit-guest.bin).
 - `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID` — the guest `ImageID` (a `Digest`,
-  `e4310e9ef42dd77c63aac61a26eef6fce38df6f3217d0468d6d46854fb00da1a`) used to
+  `e19602056e83847f084301f32b72c1d643212ed0643cbef5b676a638c464b344`) used to
   verify proofs on- and off-chain.
 
 > [!IMPORTANT]
