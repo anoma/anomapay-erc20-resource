@@ -14,13 +14,16 @@ which reproduces:
 
 ```bash
 ELFs ready at:
-ImageID: 4cdafa97cacb54dc8ea04a8bac82d3890afb195b787741446911a96351fb15b6
+ImageID: bcab4a348e091a47923a602d09d79077ff8a31f227355c9acdf628b6900db9f3
 anomapay_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-erc20-circuit-guest.bin
 ```
 
 The same value is also embedded as the committed guest binary at `anomapay_erc20_library/elf/anomapay-erc20-circuit-guest.bin` in this repo.
 
-It was last rotated for the `2.0.0-rc.5` release: the `anoma-rm-risc0` /
+The current build uses `anoma-rm-risc0` and `anoma-rm-risc0-gadgets`
+version `2.0.0`.
+
+For the `2.0.0-rc.5` release, the `anoma-rm-risc0` /
 `anoma-rm-risc0-gadgets` bump to `2.0.0-rc.9` moved RISC Zero to `3.1.0`
 (`risc0-zkvm` `3.1.0`, `risc0-build` `3.0.7`). The resource logic is unchanged,
 but the toolchain and ARM upgrade re-link the guest, so the `ImageID` moves.

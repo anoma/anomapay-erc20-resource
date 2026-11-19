@@ -9,7 +9,7 @@ which reproduces the `ANOMAPAY_EMERGENCY_MIGRATING_ERC20_CIRCUIT_ID` committed i
 
 ```bash
 ELFs ready at:
-ImageID: e4310e9ef42dd77c63aac61a26eef6fce38df6f3217d0468d6d46854fb00da1a
+ImageID: 36169ea73814a5366448a3753b46947c9d8b497a089235201408582d943d897d
 anomapay_emergency_migrating_erc20_circuit/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/anomapay-emergency-migrating-erc20-circuit-guest.bin
 ```
 
@@ -18,7 +18,12 @@ The same value is also embedded as the committed guest binary at
 in this repo. See [`anomapay_erc20_circuit/README.md`](../anomapay_erc20_circuit/README.md) for why
 and when this `ImageID` can drift from a fresh build, and how to rotate it.
 
-It was last rotated for the `2.0.0-rc.5` release: the `anoma-rm-risc0` /
+The current build uses `anoma-rm-risc0` and `anoma-rm-risc0-gadgets`
+version `2.0.0`, with the guest dependencies from the cargo group update in #35
+(`rand` stays on `0.9`). Those dependency updates are compiled into the guest,
+so this `ImageID` differs from the one built against the earlier lockfile.
+
+For the `2.0.0-rc.5` release, the `anoma-rm-risc0` /
 `anoma-rm-risc0-gadgets` bump to `2.0.0-rc.9` moved RISC Zero to `3.1.0`
 (`risc0-zkvm` `3.1.0`, `risc0-build` `3.0.7`). The resource logic is unchanged,
 but the toolchain and ARM upgrade re-link the guest, so the `ImageID` moves.
