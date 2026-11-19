@@ -170,10 +170,17 @@ Our software undergoes regular audits:
 ## Versioning
 
 The workspace crates (`anomapay_erc20_witness`, `anomapay_emergency_migrating_erc20_witness`, `anomapay_erc20_library`, `anomapay_emergency_migrating_erc20_library`) share the
-version in `[workspace.package]` (currently `2.0.0-rc.5`). The circuit crates are
+version in `[workspace.package]` (currently `2.0.0`). The circuit crates are
 versioned independently (currently `2.0.0`).
 
-`rc.5` tracks the ARM dependency bump to `2.0.0-rc.9`, which moved RISC Zero to
+`2.0.0` tracks the ARM `2.0.0` release. RISC Zero stays at `3.1.0` and the
+public API of the workspace crates is unchanged. Both guest `ImageID`s were
+rotated, because the ARM upgrade re-links the guest, and ARM `2.0.0` rotated its
+own verifying keys, so the protocol adapter has to be redeployed against the new
+values. The emergency-migrating guest `ImageID` also includes the guest
+dependency updates from #35.
+
+`rc.5` tracked the ARM dependency bump to `2.0.0-rc.9`, which moved RISC Zero to
 `3.1.0` (`risc0-zkvm` `3.1.0`, `risc0-build` `3.0.7`). The public API of the
 workspace crates is unchanged. Both guest `ImageID`s were rotated, because the
 toolchain and ARM upgrade re-link the guest. RISC Zero `3.1.0` changes the proof
